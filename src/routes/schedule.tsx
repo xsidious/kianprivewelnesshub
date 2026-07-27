@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { format } from "date-fns";
-import { ArrowLeft, CalendarIcon, Check, Clock, Stethoscope } from "lucide-react";
+import { ArrowLeft, CalendarIcon, Check, Clock, Loader2, Stethoscope } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { IntakeMultiStepForm } from "@/components/IntakeMultiStepForm";
 import { cn } from "@/lib/utils";
+import { sendScheduleRequestEmail } from "@/server/send-emails";
 
 const kianLogo = "/assets/kian-prive-logo.png";
 const carmenPortrait = "/assets/carmen-ramirez-portrait.png";
@@ -128,6 +130,7 @@ function SchedulePage() {
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [consentAcknowledged, setConsentAcknowledged] = useState(false);
   const [signature, setSignature] = useState("");
@@ -139,9 +142,9 @@ function SchedulePage() {
   const dateValid = /^\d{4}-\d{2}-\d{2}$/.test(signatureDate);
   const contactValid =
     !!date && !!time && name.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const canSubmit = contactValid && consentAcknowledged && signatureValid && dateValid;
+  const canSubmit = contactValid && consentAcknowledged && signatureValid && dateValid && !sending;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!date || !time) {
@@ -168,30 +171,31 @@ function SchedulePage() {
     }
 
     const dateStr = format(date, "EEEE, MMMM d, yyyy");
-    const subject = `Consultation Request — ${name} — ${dateStr} at ${time}`;
-    const body = [
-      `Name: ${name}`,
-      `Email: ${email}`,
-      phone ? `Phone: ${phone}` : null,
-      "",
-      `Requested date: ${dateStr}`,
-      `Requested time: ${time}`,
-      "",
-      notes ? `Notes:\n${notes}` : null,
-      "",
-      `Signature: ${signature}`,
-      `Date signed: ${signatureDate}`,
-      "",
-      "— Sent from the KIAN Privé scheduling page",
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    const mailto = `mailto:${PROVIDER_EMAIL}?subject=${encodeURIComponent(
-      subject,
-    )}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
-    setSubmitted(true);
+    setSending(true);
+    try {
+      await sendScheduleRequestEmail({
+        data: {
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim() || undefined,
+          notes: notes.trim() || undefined,
+          dateStr,
+          time,
+          signature: signature.trim(),
+          signatureDate,
+        },
+      });
+      setSubmitted(true);
+    } catch (err) {
+      console.error(err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to send your request. Please try again or email us directly.",
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -243,12 +247,11 @@ function SchedulePage() {
               <Check className="h-6 w-6 text-primary" aria-hidden="true" />
             </div>
             <h2 className="mt-4 text-2xl text-foreground" style={serif}>
-              Request prepared
+              Request sent
             </h2>
             <p className="mt-3 text-sm text-foreground/80">
-              Your email client should now be open with your consultation
-              request ready to send. If it did not open, please email us
-              directly at{" "}
+              Your consultation request was emailed to our team. We will confirm
+              availability shortly. If you need to reach us sooner, write to{" "}
               <a
                 href={`mailto:${PROVIDER_EMAIL}`}
                 className="underline decoration-primary/60 underline-offset-4 hover:text-primary"
@@ -510,12 +513,30 @@ function SchedulePage() {
                 )}
                 style={serif}
               >
-                <Stethoscope className="h-4 w-4" aria-hidden="true" />
-                Send Consultation Request
+                {sending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    Sending…
+                  </>
+                ) : (
+                  <>
+                    <Stethoscope className="h-4 w-4" aria-hidden="true" />
+                    Send Consultation Request
+                  </>
+                )}
               </button>
             </div>
           </form>
         )}
+
+        <IntakeMultiStepForm
+          requestedDate={date ? format(date, "EEEE, MMMM d, yyyy") : undefined}
+          requestedTime={time}
+          schedulingNotes={notes.trim() || undefined}
+          prefillName={name}
+          prefillEmail={email}
+          prefillPhone={phone}
+        />
 
         <div className="mt-14 flex flex-col items-center">
           <div className="h-px w-24 bg-primary/40" />
