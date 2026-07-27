@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { IntakeMultiStepForm } from "@/components/IntakeMultiStepForm";
 import { cn } from "@/lib/utils";
-import { sendScheduleRequestEmail } from "@/server/send-emails";
+import { sendScheduleRequestEmail } from "@/lib/send-emails";
 
 const kianLogo = "/assets/kian-prive-logo.png";
 const carmenPortrait = "/assets/carmen-ramirez-portrait.png";

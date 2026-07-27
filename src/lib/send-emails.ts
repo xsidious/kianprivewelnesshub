@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { Resend } from "resend";
 import { z } from "zod";
 import { formatIntakeEmailBody, type IntakeFormData } from "@/lib/intake-form";
 
@@ -52,44 +51,52 @@ const scheduleSchema = z.object({
   signatureDate: z.string().min(1).max(40),
 });
 
-function getResendConfig() {
+async function sendWithResend(options: {
+  subject: string;
+  text: string;
+  replyTo: string;
+}) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     throw new Error("Email is not configured. Missing RESEND_API_KEY.");
   }
+
   const to = process.env.RESEND_TO_EMAIL || "consultations@kianprive.com";
   const from = process.env.RESEND_FROM_EMAIL || "KIAN Privé <onboarding@resend.dev>";
-  return { resend: new Resend(apiKey), to, from };
+
+  // Dynamic import keeps the Resend SDK out of the client bundle.
+  const { Resend } = await import("resend");
+  const resend = new Resend(apiKey);
+
+  const { error } = await resend.emails.send({
+    from,
+    to: [to],
+    replyTo: options.replyTo,
+    subject: options.subject,
+    text: options.text,
+  });
+
+  if (error) {
+    console.error("Resend error:", error);
+    throw new Error(error.message || "Failed to send email.");
+  }
 }
 
 export const sendIntakeFormEmail = createServerFn({ method: "POST" })
   .validator(intakeSchema)
   .handler(async ({ data }) => {
-    const { resend, to, from } = getResendConfig();
     const payload = data as IntakeFormData;
-    const text = formatIntakeEmailBody(payload);
-
-    const { error } = await resend.emails.send({
-      from,
-      to: [to],
-      replyTo: payload.email,
+    await sendWithResend({
       subject: `Intake Form — ${payload.fullName}`,
-      text,
+      text: formatIntakeEmailBody(payload),
+      replyTo: payload.email,
     });
-
-    if (error) {
-      console.error("Resend intake error:", error);
-      throw new Error(error.message || "Failed to send intake form.");
-    }
-
     return { ok: true as const };
   });
 
 export const sendScheduleRequestEmail = createServerFn({ method: "POST" })
   .validator(scheduleSchema)
   .handler(async ({ data }) => {
-    const { resend, to, from } = getResendConfig();
-
     const text = [
       `Name: ${data.name}`,
       `Email: ${data.email}`,
@@ -108,18 +115,11 @@ export const sendScheduleRequestEmail = createServerFn({ method: "POST" })
       .filter(Boolean)
       .join("\n");
 
-    const { error } = await resend.emails.send({
-      from,
-      to: [to],
-      replyTo: data.email,
+    await sendWithResend({
       subject: `Consultation Request — ${data.name} — ${data.dateStr} at ${data.time}`,
       text,
+      replyTo: data.email,
     });
-
-    if (error) {
-      console.error("Resend schedule error:", error);
-      throw new Error(error.message || "Failed to send consultation request.");
-    }
 
     return { ok: true as const };
   });

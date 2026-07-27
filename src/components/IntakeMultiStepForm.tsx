@@ -9,7 +9,7 @@ import {
   MEDICAL_CONDITIONS,
   type IntakeFormData,
 } from "@/lib/intake-form";
-import { sendIntakeFormEmail } from "@/server/send-emails";
+import { sendIntakeFormEmail } from "@/lib/send-emails";
 
 const serif = { fontFamily: '"Cormorant Garamond", serif' } as const;
 
