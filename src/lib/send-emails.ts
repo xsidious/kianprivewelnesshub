@@ -71,16 +71,59 @@ async function sendWithResend(options: {
   }
 }
 
+async function forwardToKianPrive(payload: IntakeFormData) {
+  const baseUrl = (process.env.KIAN_PRIVE_API_URL || "https://www.kianprive.com").replace(/\/$/, "");
+  const secret = process.env.KIAN_PRIVE_INTAKE_SECRET?.trim();
+
+  if (!secret) {
+    console.warn(
+      "[wellness-hub] KIAN_PRIVE_INTAKE_SECRET is not set — skipping forward to KIAN Privé Clinical Intake.",
+    );
+    return { forwarded: false as const, reason: "missing_secret" as const };
+  }
+
+  const response = await fetch(`${baseUrl}/api/intake/wellness-hub`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-wellness-hub-secret": secret,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("[wellness-hub] KIAN Privé intake forward failed:", response.status, errorText);
+    throw new Error("Could not sync intake to KIAN Privé. Please try again or contact concierge.");
+  }
+
+  const result = (await response.json()) as { ok?: boolean; referenceId?: string };
+  return {
+    forwarded: true as const,
+    referenceId: result.referenceId,
+  };
+}
+
 export const sendProviderConnectEmail = createServerFn({ method: "POST" })
   .validator(intakeSchema)
   .handler(async ({ data }) => {
     const payload = data as IntakeFormData;
+
+    // 1) Keep existing Resend notification from Wellness Hub
     await sendWithResend({
       subject: `Provider Connect — ${payload.fullName} — ${payload.requestedDate} at ${payload.requestedTime}`,
       text: formatIntakeEmailBody(payload),
       replyTo: payload.email,
     });
-    return { ok: true as const };
+
+    // 2) Mirror submission into KIAN Privé Clinical Intake (DB + staff/patient email there)
+    const sync = await forwardToKianPrive(payload);
+
+    return {
+      ok: true as const,
+      forwardedToKianPrive: sync.forwarded,
+      referenceId: sync.forwarded ? sync.referenceId : undefined,
+    };
   });
 
 /** @deprecated use sendProviderConnectEmail */
