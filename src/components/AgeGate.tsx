@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { ShieldCheck } from "lucide-react";
-import kianLogo from "../assets/kian-prive-logo.png.asset.json";
+
+const kianLogo = "/assets/kian-prive-logo.png";
 
 const STORAGE_KEY = "kian-prive-age-gate-v1";
 const MIN_AGE = 21;
@@ -93,7 +94,7 @@ export function AgeGate({ children }: { children: React.ReactNode }) {
       <div className="w-full max-w-md rounded-2xl border border-primary/25 bg-card/90 p-5 shadow-[0_20px_60px_-25px_rgba(160,130,70,0.5)] sm:p-8">
         <div className="flex flex-col items-center text-center">
           <img
-            src={kianLogo.url}
+            src={kianLogo}
             alt="KIAN Privé"
             className="h-auto w-full max-w-[160px] object-contain"
           />

@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Sparkles } from "lucide-react";
-import kianLogo from "../assets/kian-prive-logo.png.asset.json";
-import jenniferPortrait from "../assets/jennifer-fenner-portrait.png.asset.json";
-import shanePortrait from "../assets/shane-shuckerow-portrait.png.asset.json";
+
+const kianLogo = "/assets/kian-prive-logo.png";
+const jenniferPortrait = "/assets/jennifer-fenner-portrait.png";
+const shanePortrait = "/assets/shane-shuckerow-portrait.png";
 
 export const Route = createFileRoute("/jennifer-fenner")({
   head: () => ({
@@ -45,7 +46,7 @@ function JenniferFenner() {
         </Link>
 
         <img
-          src={kianLogo.url}
+          src={kianLogo}
           alt="KIAN Privé"
           className="h-auto w-full max-w-[220px] object-contain"
         />
@@ -73,7 +74,7 @@ function JenniferFenner() {
           <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
             <div className="flex flex-shrink-0 flex-col items-center md:items-start">
               <img
-                src={jenniferPortrait.url}
+                src={jenniferPortrait}
                 alt="Jennifer Fenner, Certified Peptide Consultant"
                 width={280}
                 height={420}
@@ -111,7 +112,7 @@ function JenniferFenner() {
           <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
             <div className="flex flex-shrink-0 flex-col items-center md:items-start">
               <img
-                src={shanePortrait.url}
+                src={shanePortrait}
                 alt="Shane Shuckerow, Health, Wellness & Fitness Expert"
                 width={280}
                 height={420}

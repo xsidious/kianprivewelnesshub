@@ -1,16 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, ArrowUp, Sparkles, Stethoscope } from "lucide-react";
-import kianLogo from "../assets/kian-prive-logo.png.asset.json";
-import wellnessCouple from "../assets/wellness-couple.jpg.asset.json";
-import peptidesHero from "../assets/peptides-hero.jpg.asset.json";
-import physicianTablet from "../assets/physician-tablet.jpg.asset.json";
-import catGlp1 from "../assets/cat-glp1.jpg.asset.json";
-import catRegeneration from "../assets/cat-regeneration-body.jpg.asset.json";
-import catGh from "../assets/cat-gh.jpg.asset.json";
-import catCognitive from "../assets/cat-cognitive.jpg.asset.json";
-import catHormonal from "../assets/cat-hormonal.jpg.asset.json";
-import catCellular from "../assets/cat-cellular.jpg.asset.json";
+
+const kianLogo = "/assets/kian-prive-logo.png";
+const wellnessCouple = "/assets/wellness-couple.jpg";
+const peptidesHero = "/assets/peptides-hero.jpg";
+const physicianTablet = "/assets/physician-tablet.jpg";
+const catGlp1 = "/assets/cat-glp1.jpg";
+const catRegeneration = "/assets/cat-regeneration-body.jpg";
+const catGh = "/assets/cat-gh.jpg";
+const catCognitive = "/assets/cat-cognitive.jpg";
+const catHormonal = "/assets/cat-hormonal.jpg";
+const catCellular = "/assets/cat-cellular.jpg";
 
 
 
@@ -42,7 +43,7 @@ function KianLogo() {
   return (
     <div className="flex flex-col items-center">
       <img
-        src={kianLogo.url}
+        src={kianLogo}
         alt="KIAN Privé"
         className="h-auto w-full max-w-[280px] object-contain"
       />
@@ -99,7 +100,7 @@ function WellnessCompoundingHero() {
       <div className="relative w-full overflow-hidden rounded-2xl shadow-[0_10px_40px_-20px_rgba(160,130,70,0.45)]">
         <div className="relative">
           <img
-            src={peptidesHero.url}
+            src={peptidesHero}
             alt="Peptide vial and injectable pen on a cream marble surface"
             width={1344}
             height={672}
@@ -134,7 +135,7 @@ type Group = { title: string; image: string; items: Entry[] };
 const GLOSSARY: Group[] = [
   {
     title: "GLP-1 & Metabolic",
-    image: catGlp1.url,
+    image: catGlp1,
     items: [
       { name: "Semaglutide", desc: "GLP-1 receptor agonist used for appetite regulation, glycemic control, and sustained weight reduction." },
       { name: "Tirzepatide", desc: "Dual GIP/GLP-1 agonist offering enhanced metabolic and weight-loss effects versus GLP-1 alone." },
@@ -148,7 +149,7 @@ const GLOSSARY: Group[] = [
   },
   {
     title: "Regeneration & Repair",
-    image: catRegeneration.url,
+    image: catRegeneration,
     items: [
       { name: "BPC-157", desc: "Body-protective compound promoting tendon, ligament, gut, and vascular healing." },
       { name: "TB-500 (Thymosin β4)", desc: "Supports tissue repair, inflammation modulation, and cellular migration for recovery." },
@@ -159,7 +160,7 @@ const GLOSSARY: Group[] = [
   },
   {
     title: "Growth Hormone Axis",
-    image: catGh.url,
+    image: catGh,
     items: [
       { name: "CJC-1295", desc: "GHRH analogue that elevates baseline growth hormone and IGF-1 output." },
       { name: "Ipamorelin", desc: "Selective ghrelin/GH secretagogue with minimal impact on cortisol or prolactin." },
@@ -171,7 +172,7 @@ const GLOSSARY: Group[] = [
   },
   {
     title: "Cognitive, Sleep & Longevity",
-    image: catCognitive.url,
+    image: catCognitive,
     items: [
       { name: "DSIP", desc: "Delta sleep-inducing peptide supporting deep sleep architecture and stress resilience." },
       { name: "Epithalon", desc: "Pineal peptide studied for telomere support, circadian rhythm, and longevity." },
@@ -184,7 +185,7 @@ const GLOSSARY: Group[] = [
   },
   {
     title: "Hormonal & Sexual Health",
-    image: catHormonal.url,
+    image: catHormonal,
     items: [
       { name: "Gonadorelin", desc: "GnRH analogue used to maintain endogenous testosterone and fertility signaling." },
       { name: "Kisspeptin", desc: "Master regulator of the reproductive axis, stimulating LH/FSH release." },
@@ -194,7 +195,7 @@ const GLOSSARY: Group[] = [
   },
   {
     title: "Cellular, Immune & Mitochondrial",
-    image: catCellular.url,
+    image: catCellular,
     items: [
       { name: "MOTS-c", desc: "Mitochondrial-derived peptide supporting metabolic flexibility and insulin sensitivity." },
       { name: "SS-31 (Elamipretide)", desc: "Mitochondria-targeted peptide protecting cardiolipin and cellular energy output." },
@@ -336,7 +337,7 @@ function WellnessJourney() {
 
       <div className="mt-8 w-full overflow-hidden rounded-2xl border border-primary/20 shadow-[0_10px_40px_-20px_rgba(160,130,70,0.35)]">
         <img
-          src={wellnessCouple.url}
+          src={wellnessCouple}
           alt="A man and woman embracing a wellness lifestyle"
           className="h-auto w-full object-cover"
           width={1024}
@@ -444,7 +445,7 @@ function AftercarePrograms() {
         <div className="flex flex-col sm:flex-row">
           <div className="flex items-center justify-center p-6 sm:w-2/5 sm:p-8">
             <img
-              src={physicianTablet.url}
+              src={physicianTablet}
               alt="Physician in a white lab coat reviewing a tablet"
               width={400}
               height={500}

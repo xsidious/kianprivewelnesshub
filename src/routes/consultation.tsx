@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Send, Sparkles, CheckCircle2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import kianLogo from "../assets/kian-prive-logo.png.asset.json";
+
+const kianLogo = "/assets/kian-prive-logo.png";
 
 export const Route = createFileRoute("/consultation")({
   head: () => ({
@@ -171,7 +172,7 @@ function ConsultationPage() {
 
         <div className="flex flex-col items-center">
           <img
-            src={kianLogo.url}
+            src={kianLogo}
             alt="KIAN Privé"
             className="h-auto w-full max-w-[200px] object-contain"
           />

@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import kianLogo from "../assets/kian-prive-logo.png.asset.json";
-import carmenPortrait from "../assets/carmen-ramirez-portrait.png.asset.json";
+
+const kianLogo = "/assets/kian-prive-logo.png";
+const carmenPortrait = "/assets/carmen-ramirez-portrait.png";
 
 const PROVIDER_EMAIL = "consultations@kianprive.com";
 
@@ -80,7 +81,7 @@ function MeetYourProvider() {
       <div className="mt-6 rounded-2xl border border-primary/20 bg-card/60 px-6 pb-6 pt-6 shadow-[0_10px_30px_-20px_rgba(160,130,70,0.35)] sm:px-8 sm:pb-8 sm:pt-8">
         <div className="flex flex-col items-center">
           <img
-            src={carmenPortrait.url}
+            src={carmenPortrait}
             alt="Dr. Carmen Teresa Ramirez, Board Certified Neurologist"
             width={280}
             height={420}
@@ -206,7 +207,7 @@ function SchedulePage() {
         </Link>
 
         <img
-          src={kianLogo.url}
+          src={kianLogo}
           alt="KIAN Privé"
           className="h-auto w-full max-w-[200px] object-contain"
         />

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, HelpCircle } from "lucide-react";
-import kianLogo from "../assets/kian-prive-logo.png.asset.json";
+
+const kianLogo = "/assets/kian-prive-logo.png";
 
 export const Route = createFileRoute("/faq")({
   head: () => ({
@@ -99,7 +100,7 @@ function FAQ() {
         </Link>
 
         <img
-          src={kianLogo.url}
+          src={kianLogo}
           alt="KIAN Privé"
           className="h-auto w-full max-w-[220px] object-contain"
         />
