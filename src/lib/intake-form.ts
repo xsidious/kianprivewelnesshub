@@ -85,13 +85,17 @@ export const CONTRAINDICATIONS = [
   "None of the above",
 ] as const;
 
-export const INTAKE_STEPS = [
-  { id: 1, title: "Patient Information" },
-  { id: 2, title: "Medications & Allergies" },
-  { id: 3, title: "Medical History" },
-  { id: 4, title: "GLP / Weight-Loss History" },
-  { id: 5, title: "Screening & Attestation" },
+export const PROVIDER_CONNECT_STEPS = [
+  { id: 1, title: "Schedule" },
+  { id: 2, title: "Patient Info" },
+  { id: 3, title: "Medications" },
+  { id: 4, title: "History" },
+  { id: 5, title: "GLP History" },
+  { id: 6, title: "Screening & Consent" },
 ] as const;
+
+/** @deprecated use PROVIDER_CONNECT_STEPS */
+export const INTAKE_STEPS = PROVIDER_CONNECT_STEPS;
 
 export const emptyIntakeForm = (): IntakeFormData => ({
   fullName: "",
@@ -133,8 +137,13 @@ export function formatIntakeEmailBody(data: IntakeFormData): string {
   const line = (label: string, value: string) => `${label}: ${value?.trim() || "—"}`;
 
   return [
-    "KIAN PRIVÉ — Compounded Wellness Intake Form",
-    "==============================================",
+    "KIAN PRIVÉ — Provider Connect + Compounded Wellness Intake",
+    "==========================================================",
+    "",
+    "SCHEDULING REQUEST",
+    line("Requested date", data.requestedDate ?? ""),
+    line("Requested time", data.requestedTime ?? ""),
+    line("Discussion notes", data.schedulingNotes ?? ""),
     "",
     "01 PATIENT INFORMATION",
     line("Full Name", data.fullName),
@@ -180,18 +189,7 @@ export function formatIntakeEmailBody(data: IntakeFormData): string {
     line("Printed Name", data.attestationName),
     line("Date", data.attestationDate),
     "",
-    data.requestedDate || data.requestedTime
-      ? [
-          "SCHEDULING REQUEST",
-          line("Requested date", data.requestedDate ?? ""),
-          line("Requested time", data.requestedTime ?? ""),
-          line("Notes", data.schedulingNotes ?? ""),
-          "",
-        ].join("\n")
-      : "",
     "— Submitted via KIAN Privé Connect with Provider page",
     "This information is confidential and protected under HIPAA guidelines.",
-  ]
-    .filter((s) => s !== undefined)
-    .join("\n");
+  ].join("\n");
 }

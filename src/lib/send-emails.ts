@@ -35,20 +35,9 @@ const intakeSchema = z.object({
   allergicReactionDetails: z.string().max(1000),
   attestationName: z.string().min(1).max(120),
   attestationDate: z.string().min(1).max(40),
-  requestedDate: z.string().max(80).optional(),
-  requestedTime: z.string().max(40).optional(),
+  requestedDate: z.string().min(1).max(80),
+  requestedTime: z.string().min(1).max(40),
   schedulingNotes: z.string().max(1000).optional(),
-});
-
-const scheduleSchema = z.object({
-  name: z.string().min(1).max(120),
-  email: z.string().email().max(255),
-  phone: z.string().max(40).optional(),
-  notes: z.string().max(1000).optional(),
-  dateStr: z.string().min(1).max(80),
-  time: z.string().min(1).max(40),
-  signature: z.string().min(1).max(120),
-  signatureDate: z.string().min(1).max(40),
 });
 
 async function sendWithResend(options: {
@@ -82,44 +71,17 @@ async function sendWithResend(options: {
   }
 }
 
-export const sendIntakeFormEmail = createServerFn({ method: "POST" })
+export const sendProviderConnectEmail = createServerFn({ method: "POST" })
   .validator(intakeSchema)
   .handler(async ({ data }) => {
     const payload = data as IntakeFormData;
     await sendWithResend({
-      subject: `Intake Form — ${payload.fullName}`,
+      subject: `Provider Connect — ${payload.fullName} — ${payload.requestedDate} at ${payload.requestedTime}`,
       text: formatIntakeEmailBody(payload),
       replyTo: payload.email,
     });
     return { ok: true as const };
   });
 
-export const sendScheduleRequestEmail = createServerFn({ method: "POST" })
-  .validator(scheduleSchema)
-  .handler(async ({ data }) => {
-    const text = [
-      `Name: ${data.name}`,
-      `Email: ${data.email}`,
-      data.phone ? `Phone: ${data.phone}` : null,
-      "",
-      `Requested date: ${data.dateStr}`,
-      `Requested time: ${data.time}`,
-      "",
-      data.notes ? `Notes:\n${data.notes}` : null,
-      "",
-      `Signature: ${data.signature}`,
-      `Date signed: ${data.signatureDate}`,
-      "",
-      "— Sent from the KIAN Privé scheduling page",
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    await sendWithResend({
-      subject: `Consultation Request — ${data.name} — ${data.dateStr} at ${data.time}`,
-      text,
-      replyTo: data.email,
-    });
-
-    return { ok: true as const };
-  });
+/** @deprecated use sendProviderConnectEmail */
+export const sendIntakeFormEmail = sendProviderConnectEmail;

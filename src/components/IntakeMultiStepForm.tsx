@@ -1,17 +1,39 @@
-import { useEffect, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, FileText, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { format } from "date-fns";
+import {
+  CalendarIcon,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  FileText,
+  Loader2,
+  Stethoscope,
+} from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import {
   CONTRAINDICATIONS,
   emptyIntakeForm,
   GLP_MEDICATIONS,
-  INTAKE_STEPS,
   MEDICAL_CONDITIONS,
+  PROVIDER_CONNECT_STEPS,
   type IntakeFormData,
 } from "@/lib/intake-form";
-import { sendIntakeFormEmail } from "@/lib/send-emails";
+import { sendProviderConnectEmail } from "@/lib/send-emails";
 
 const serif = { fontFamily: '"Cormorant Garamond", serif' } as const;
+
+const TIME_SLOTS = [
+  "9:00 AM",
+  "10:00 AM",
+  "11:00 AM",
+  "1:00 PM",
+  "2:00 PM",
+  "3:00 PM",
+  "4:00 PM",
+  "5:00 PM",
+];
 
 const inputClass =
   "min-h-11 w-full rounded-lg border border-primary/25 bg-background/60 px-4 py-2.5 text-sm text-foreground placeholder:text-foreground/40 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30";
@@ -19,15 +41,6 @@ const inputClass =
 const labelClass = "mb-1.5 block text-xs uppercase tracking-[0.2em] text-foreground/70";
 
 const textareaClass = `${inputClass} min-h-[96px] resize-y`;
-
-type Props = {
-  requestedDate?: string;
-  requestedTime?: string;
-  schedulingNotes?: string;
-  prefillName?: string;
-  prefillEmail?: string;
-  prefillPhone?: string;
-};
 
 function Field({
   id,
@@ -102,38 +115,18 @@ function CheckboxGrid({
   );
 }
 
-export function IntakeMultiStepForm({
-  requestedDate,
-  requestedTime,
-  schedulingNotes,
-  prefillName,
-  prefillEmail,
-  prefillPhone,
-}: Props) {
+export function ProviderConnectForm() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   const [step, setStep] = useState(0);
-  const [data, setData] = useState<IntakeFormData>(() => {
-    const base = emptyIntakeForm();
-    return {
-      ...base,
-      fullName: prefillName ?? "",
-      email: prefillEmail ?? "",
-      phone: prefillPhone ?? "",
-      attestationName: prefillName ?? "",
-    };
-  });
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [time, setTime] = useState<string | undefined>(undefined);
+  const [data, setData] = useState<IntakeFormData>(() => emptyIntakeForm());
+  const [consentAcknowledged, setConsentAcknowledged] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-
-  useEffect(() => {
-    setData((prev) => ({
-      ...prev,
-      fullName: prev.fullName || prefillName || "",
-      email: prev.email || prefillEmail || "",
-      phone: prev.phone || prefillPhone || "",
-      attestationName: prev.attestationName || prefillName || "",
-    }));
-  }, [prefillName, prefillEmail, prefillPhone]);
 
   const setField = <K extends keyof IntakeFormData>(key: K, value: IntakeFormData[K]) => {
     setData((prev) => ({ ...prev, [key]: value }));
@@ -141,18 +134,27 @@ export function IntakeMultiStepForm({
 
   const validateStep = (index: number): string | null => {
     if (index === 0) {
+      if (!date) return "Please select a consultation date.";
+      if (!time) return "Please select a time slot.";
+    }
+    if (index === 1) {
       if (!data.fullName.trim()) return "Please enter your full name.";
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return "Please enter a valid email.";
-      if (!data.dateOfBirth) return "Please enter your date of birth.";
       if (!data.phone.trim()) return "Please enter your phone number.";
+      if (!data.dateOfBirth) return "Please enter your date of birth.";
     }
-    if (index === 4) {
+    if (index === 5) {
       if (!data.familyMtcMen2) return "Please answer the family history question.";
       if (!data.allergicReactionAny) return "Please answer the allergy question.";
       if (data.allergicReactionAny === "Yes" && !data.allergicReactionDetails.trim()) {
         return "Please describe the allergic reaction.";
       }
-      if (!data.attestationName.trim()) return "Please type your printed name to attest.";
+      if (!consentAcknowledged) {
+        return "Please acknowledge the disclaimer and informed consent.";
+      }
+      if (data.attestationName.trim().length < 2) {
+        return "Please type your full name as your signature.";
+      }
       if (!data.attestationDate) return "Please select the attestation date.";
     }
     return null;
@@ -165,7 +167,10 @@ export function IntakeMultiStepForm({
       return;
     }
     setError(null);
-    setStep((s) => Math.min(s + 1, INTAKE_STEPS.length - 1));
+    if (step === 1 && !data.attestationName.trim()) {
+      setField("attestationName", data.fullName);
+    }
+    setStep((s) => Math.min(s + 1, PROVIDER_CONNECT_STEPS.length - 1));
   };
 
   const goBack = () => {
@@ -174,20 +179,26 @@ export function IntakeMultiStepForm({
   };
 
   const handleSubmit = async () => {
-    const msg = validateStep(4);
+    const msg = validateStep(5);
     if (msg) {
       setError(msg);
       return;
     }
+    if (!date || !time) {
+      setError("Please select a date and time.");
+      setStep(0);
+      return;
+    }
+
     setError(null);
     setSending(true);
     try {
-      await sendIntakeFormEmail({
+      await sendProviderConnectEmail({
         data: {
           ...data,
-          requestedDate,
-          requestedTime,
-          schedulingNotes,
+          requestedDate: format(date, "EEEE, MMMM d, yyyy"),
+          requestedTime: time,
+          schedulingNotes: data.schedulingNotes?.trim() || undefined,
         },
       });
       setSubmitted(true);
@@ -196,7 +207,7 @@ export function IntakeMultiStepForm({
       setError(
         err instanceof Error
           ? err.message
-          : "Unable to send the intake form. Please try again.",
+          : "Unable to send your request. Please try again.",
       );
     } finally {
       setSending(false);
@@ -213,12 +224,27 @@ export function IntakeMultiStepForm({
           <Check className="h-6 w-6 text-primary" aria-hidden="true" />
         </div>
         <h2 className="mt-4 text-2xl text-foreground" style={serif}>
-          Intake form sent
+          Request & intake sent
         </h2>
         <p className="mt-3 text-sm text-foreground/80">
-          Your compounded wellness intake was securely emailed to our clinical team. They will
-          review it before your consultation.
+          Your consultation request and compounded wellness intake were emailed to our clinical
+          team. We will confirm availability shortly.
         </p>
+        <button
+          type="button"
+          onClick={() => {
+            setSubmitted(false);
+            setStep(0);
+            setDate(undefined);
+            setTime(undefined);
+            setData(emptyIntakeForm());
+            setConsentAcknowledged(false);
+          }}
+          className="mt-6 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-background/60 px-5 py-2 text-sm tracking-wide text-foreground transition-colors hover:border-primary hover:bg-primary/10"
+          style={serif}
+        >
+          Submit another request
+        </button>
       </section>
     );
   }
@@ -227,14 +253,15 @@ export function IntakeMultiStepForm({
     <section className="mt-12 w-full rounded-2xl border border-primary/20 bg-card/60 p-6 shadow-[0_10px_30px_-20px_rgba(160,130,70,0.35)] sm:p-8">
       <div className="flex flex-col items-center text-center">
         <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-primary" aria-hidden="true" />
+          <Stethoscope className="h-5 w-5 text-primary" aria-hidden="true" />
           <div className="h-px w-16 bg-primary/40" />
         </div>
         <h2 className="mt-4 text-2xl text-foreground sm:text-3xl" style={serif}>
-          Compounded Wellness Intake Form
+          Book & Complete Intake
         </h2>
         <p className="mt-2 max-w-lg text-sm text-foreground/75" style={serif}>
-          Complete this confidential multi-step intake so your provider can prepare for your visit.
+          Choose your consultation time, then complete the compounded wellness intake in one
+          guided flow. Everything is sent securely to our team.
         </p>
         <a
           href="/assets/kian-prive-intake-form.pdf"
@@ -247,7 +274,7 @@ export function IntakeMultiStepForm({
       </div>
 
       <ol className="mt-8 flex flex-wrap justify-center gap-2" aria-label="Form steps">
-        {INTAKE_STEPS.map((s, i) => (
+        {PROVIDER_CONNECT_STEPS.map((s, i) => (
           <li
             key={s.id}
             className={cn(
@@ -266,6 +293,96 @@ export function IntakeMultiStepForm({
 
       <div className="mt-8 space-y-5" aria-live="polite">
         {step === 0 && (
+          <>
+            <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
+              <div className="flex flex-col items-center">
+                <div className="mb-3 flex items-center gap-2 text-sm text-foreground/80" style={serif}>
+                  <CalendarIcon className="h-4 w-4 text-primary" aria-hidden="true" />
+                  Select a date
+                </div>
+                <div className="rounded-xl border border-primary/20 bg-background/60 p-2">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={(d) => {
+                      setDate(d);
+                      setTime(undefined);
+                    }}
+                    disabled={(d) => {
+                      const day = d.getDay();
+                      return d < today || day === 0 || day === 6;
+                    }}
+                    initialFocus
+                    className={cn("pointer-events-auto")}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center lg:items-start">
+                <div className="mb-3 flex items-center gap-2 text-sm text-foreground/80" style={serif}>
+                  <Clock className="h-4 w-4 text-primary" aria-hidden="true" />
+                  Select a time
+                </div>
+                <div
+                  role="radiogroup"
+                  aria-label="Available time slots"
+                  className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-3"
+                >
+                  {TIME_SLOTS.map((slot) => {
+                    const active = time === slot;
+                    const disabled = !date;
+                    return (
+                      <button
+                        type="button"
+                        key={slot}
+                        role="radio"
+                        aria-checked={active}
+                        disabled={disabled}
+                        onClick={() => setTime(slot)}
+                        className={cn(
+                          "min-h-11 rounded-full border px-4 py-2.5 text-xs tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                          active
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-primary/30 bg-background/60 text-foreground hover:border-primary hover:bg-primary/10",
+                          disabled &&
+                            "cursor-not-allowed opacity-50 hover:border-primary/30 hover:bg-background/60",
+                        )}
+                        style={serif}
+                      >
+                        {slot}
+                      </button>
+                    );
+                  })}
+                </div>
+                {!date && (
+                  <p className="mt-3 text-xs italic text-foreground/60">
+                    Choose a date to see available times.
+                  </p>
+                )}
+                {date && time && (
+                  <p className="mt-4 text-sm text-foreground/80" style={serif}>
+                    Requesting{" "}
+                    <span className="font-semibold text-foreground">
+                      {format(date, "EEEE, MMMM d")} at {time}
+                    </span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <Field id="schedulingNotes" label="What would you like to discuss? (optional)">
+              <textarea
+                id="schedulingNotes"
+                className={textareaClass}
+                value={data.schedulingNotes ?? ""}
+                onChange={(e) => setField("schedulingNotes", e.target.value.slice(0, 1000))}
+                rows={3}
+              />
+            </Field>
+          </>
+        )}
+
+        {step === 1 && (
           <>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field id="fullName" label="Full Name">
@@ -386,7 +503,7 @@ export function IntakeMultiStepForm({
           </>
         )}
 
-        {step === 1 && (
+        {step === 2 && (
           <>
             <Field id="prescriptionMedications" label="Prescription Medications (name, dose, frequency)">
               <textarea
@@ -438,7 +555,7 @@ export function IntakeMultiStepForm({
           </>
         )}
 
-        {step === 2 && (
+        {step === 3 && (
           <>
             <p className="text-sm text-foreground/80">Please check any conditions that apply to you:</p>
             <CheckboxGrid
@@ -465,7 +582,10 @@ export function IntakeMultiStepForm({
                 rows={2}
               />
             </Field>
-            <Field id="pregnantBreastfeeding" label="Currently pregnant, breastfeeding, or planning to become pregnant">
+            <Field
+              id="pregnantBreastfeeding"
+              label="Currently pregnant, breastfeeding, or planning to become pregnant"
+            >
               <select
                 id="pregnantBreastfeeding"
                 className={inputClass}
@@ -483,7 +603,7 @@ export function IntakeMultiStepForm({
           </>
         )}
 
-        {step === 3 && (
+        {step === 4 && (
           <>
             <p className="text-sm text-foreground/80">
               Have you previously used any of the following? (Select all that apply)
@@ -520,7 +640,10 @@ export function IntakeMultiStepForm({
                 />
               </Field>
             </div>
-            <Field id="glpSideEffects" label="Side effects or notable experience with prior GLP / peptide therapy">
+            <Field
+              id="glpSideEffects"
+              label="Side effects or notable experience with prior GLP / peptide therapy"
+            >
               <textarea
                 id="glpSideEffects"
                 className={textareaClass}
@@ -532,7 +655,7 @@ export function IntakeMultiStepForm({
           </>
         )}
 
-        {step === 4 && (
+        {step === 5 && (
           <>
             <p className="text-sm text-foreground/80">
               Personal history of any of the following (may affect treatment eligibility):
@@ -543,6 +666,7 @@ export function IntakeMultiStepForm({
               values={data.contraindications}
               onChange={(next) => setField("contraindications", next)}
             />
+
             <fieldset className="space-y-3">
               <legend className={labelClass}>
                 Family history of MTC or MEN2 syndrome (parent, sibling, or child)?
@@ -562,6 +686,7 @@ export function IntakeMultiStepForm({
                 ))}
               </div>
             </fieldset>
+
             <fieldset className="space-y-3">
               <legend className={labelClass}>
                 Allergic reaction to any medication, supplement, or peptide?
@@ -581,33 +706,66 @@ export function IntakeMultiStepForm({
                 ))}
               </div>
             </fieldset>
+
             {data.allergicReactionAny === "Yes" && (
               <Field id="allergicReactionDetails" label="If yes, please specify substance & reaction">
                 <textarea
                   id="allergicReactionDetails"
                   className={textareaClass}
                   value={data.allergicReactionDetails}
-                  onChange={(e) => setField("allergicReactionDetails", e.target.value.slice(0, 1000))}
+                  onChange={(e) =>
+                    setField("allergicReactionDetails", e.target.value.slice(0, 1000))
+                  }
                   rows={2}
                 />
               </Field>
             )}
-            <div className="rounded-xl border border-primary/20 bg-background/40 p-4">
-              <p className="text-sm font-medium text-foreground">Patient Attestation</p>
-              <p className="mt-2 text-xs leading-relaxed text-foreground/75">
-                I confirm the information above is accurate and complete to the best of my knowledge, for use by my
-                KIAN Privé clinician in evaluating my eligibility for peptide and/or GLP receptor agonist therapy.
-              </p>
+
+            <div className="rounded-xl border border-primary/20 bg-background/40 p-4 sm:p-5">
+              <p className="text-sm font-medium text-foreground">Disclaimer & Informed Consent</p>
+              <ol className="mt-3 list-decimal space-y-2 pl-5 text-xs leading-relaxed text-foreground/80">
+                <li>
+                  Information is for consultation only and does not constitute a diagnosis or treatment
+                  plan.
+                </li>
+                <li>
+                  Peptide therapies are provided only under licensed physician oversight after clinical
+                  evaluation.
+                </li>
+                <li>
+                  Some therapies may be used off-label or investigationally; risks will be discussed
+                  before any protocol begins.
+                </li>
+                <li>
+                  All personal and medical information is confidential and protected under HIPAA
+                  guidelines.
+                </li>
+              </ol>
+
+              <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-md border border-primary/25 bg-background/60 px-3 py-2.5 text-sm text-foreground/85">
+                <input
+                  type="checkbox"
+                  checked={consentAcknowledged}
+                  onChange={(e) => setConsentAcknowledged(e.target.checked)}
+                  className="mt-1 h-4 w-4 accent-primary"
+                />
+                <span>
+                  I confirm the information above is accurate and complete, and I agree to the
+                  disclaimer and informed consent.
+                </span>
+              </label>
+
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <Field id="attestationName" label="Printed Name">
+                <Field id="attestationName" label="Signature (type full name)">
                   <input
                     id="attestationName"
                     className={`${inputClass} font-[cursive]`}
                     value={data.attestationName}
                     onChange={(e) => setField("attestationName", e.target.value.slice(0, 120))}
+                    placeholder="Your full legal name"
                   />
                 </Field>
-                <Field id="attestationDate" label="Date">
+                <Field id="attestationDate" label="Date signed">
                   <input
                     id="attestationDate"
                     type="date"
@@ -618,9 +776,15 @@ export function IntakeMultiStepForm({
                 </Field>
               </div>
             </div>
-            <p className="text-[11px] uppercase tracking-[0.15em] text-foreground/55">
-              Confidential · Protected under HIPAA guidelines
-            </p>
+
+            {date && time && (
+              <p className="text-center text-sm text-foreground/80" style={serif}>
+                Submitting for{" "}
+                <span className="font-semibold text-foreground">
+                  {format(date, "EEEE, MMMM d")} at {time}
+                </span>
+              </p>
+            )}
           </>
         )}
       </div>
@@ -638,9 +802,7 @@ export function IntakeMultiStepForm({
           disabled={step === 0 || sending}
           className={cn(
             "inline-flex min-h-11 items-center gap-2 rounded-full border border-primary/30 px-5 py-2.5 text-sm tracking-wide transition-colors",
-            step === 0
-              ? "cursor-not-allowed opacity-40"
-              : "hover:border-primary hover:bg-primary/10",
+            step === 0 ? "cursor-not-allowed opacity-40" : "hover:border-primary hover:bg-primary/10",
           )}
           style={serif}
         >
@@ -648,7 +810,7 @@ export function IntakeMultiStepForm({
           Back
         </button>
 
-        {step < INTAKE_STEPS.length - 1 ? (
+        {step < PROVIDER_CONNECT_STEPS.length - 1 ? (
           <button
             type="button"
             onClick={goNext}
@@ -674,7 +836,7 @@ export function IntakeMultiStepForm({
             ) : (
               <>
                 <FileText className="h-4 w-4" aria-hidden="true" />
-                Submit Intake Form
+                Submit Request & Intake
               </>
             )}
           </button>
@@ -683,3 +845,6 @@ export function IntakeMultiStepForm({
     </section>
   );
 }
+
+/** @deprecated use ProviderConnectForm */
+export const IntakeMultiStepForm = ProviderConnectForm;
