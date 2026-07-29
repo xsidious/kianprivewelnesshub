@@ -12,6 +12,7 @@ export type IntakeFormData = {
   primaryCarePhysician: string;
   firstAppointmentDate: string;
   assignedProvider: string;
+  referredBy: string;
   // 02 Meds
   prescriptionMedications: string;
   supplementsPeptides: string;
@@ -37,6 +38,7 @@ export type IntakeFormData = {
   // 07 Attestation
   attestationName: string;
   attestationDate: string;
+  clientSignatureDataUrl: string;
   // Scheduling context (optional, filled from page)
   requestedDate?: string;
   requestedTime?: string;
@@ -109,7 +111,8 @@ export const emptyIntakeForm = (): IntakeFormData => ({
   idIssuePlace: "",
   primaryCarePhysician: "",
   firstAppointmentDate: "",
-  assignedProvider: "",
+  assignedProvider: "Dr. Carmen Ramirez",
+  referredBy: "",
   prescriptionMedications: "",
   supplementsPeptides: "",
   medicationAllergies: "",
@@ -130,6 +133,7 @@ export const emptyIntakeForm = (): IntakeFormData => ({
   allergicReactionDetails: "",
   attestationName: "",
   attestationDate: new Date().toISOString().slice(0, 10),
+  clientSignatureDataUrl: "",
 });
 
 export function formatIntakeEmailBody(data: IntakeFormData): string {
@@ -158,6 +162,7 @@ export function formatIntakeEmailBody(data: IntakeFormData): string {
     line("Primary Care Physician", data.primaryCarePhysician),
     line("Date of First Appointment", data.firstAppointmentDate),
     line("Assigned KIAN Privé Provider", data.assignedProvider),
+    line("Referred by", data.referredBy),
     "",
     "02 CURRENT MEDICATIONS, SUPPLEMENTS & ALLERGIES",
     line("Prescription Medications", data.prescriptionMedications),
@@ -188,6 +193,7 @@ export function formatIntakeEmailBody(data: IntakeFormData): string {
     "07 PATIENT ATTESTATION",
     line("Printed Name", data.attestationName),
     line("Date", data.attestationDate),
+    line("Handwritten signature", data.clientSignatureDataUrl ? "Captured" : "Missing"),
     "",
     "— Submitted via KIAN Privé Connect with Provider page",
     "This information is confidential and protected under HIPAA guidelines.",

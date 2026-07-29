@@ -89,14 +89,23 @@ function SchedulePage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex max-w-3xl flex-col items-center px-4 py-12 sm:px-6 sm:py-16">
-        <Link
-          to="/"
-          className="mb-8 inline-flex items-center gap-2 self-start rounded-full border border-primary/30 px-4 py-2 text-sm tracking-wide text-foreground transition-colors hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          style={serif}
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Back to home
-        </Link>
+        <div className="mb-8 flex w-full flex-wrap items-center justify-between gap-3 self-stretch">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 rounded-full border border-primary/30 px-4 py-2 text-sm tracking-wide text-foreground transition-colors hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            style={serif}
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Back to home
+          </Link>
+          <a
+            href="https://www.kianprive.com"
+            className="inline-flex items-center gap-2 rounded-full border border-primary bg-primary px-4 py-2 text-sm tracking-wide text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            style={serif}
+          >
+            Back to Privé site
+          </a>
+        </div>
 
         <img
           src={kianLogo}

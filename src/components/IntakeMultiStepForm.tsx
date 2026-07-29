@@ -21,6 +21,7 @@ import {
   type IntakeFormData,
 } from "@/lib/intake-form";
 import { sendProviderConnectEmail } from "@/lib/send-emails";
+import { SignaturePad } from "@/components/SignaturePad";
 
 const serif = { fontFamily: '"Cormorant Garamond", serif' } as const;
 
@@ -127,6 +128,7 @@ export function ProviderConnectForm() {
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [signatureFullscreen, setSignatureFullscreen] = useState(false);
 
   const setField = <K extends keyof IntakeFormData>(key: K, value: IntakeFormData[K]) => {
     setData((prev) => ({ ...prev, [key]: value }));
@@ -153,9 +155,12 @@ export function ProviderConnectForm() {
         return "Please acknowledge the disclaimer and informed consent.";
       }
       if (data.attestationName.trim().length < 2) {
-        return "Please type your full name as your signature.";
+        return "Please type your full name as your printed signature.";
       }
       if (!data.attestationDate) return "Please select the attestation date.";
+      if (!data.clientSignatureDataUrl || data.clientSignatureDataUrl.length < 40) {
+        return "Please add your handwritten signature (open full screen to sign).";
+      }
     }
     return null;
   };
@@ -196,6 +201,7 @@ export function ProviderConnectForm() {
       await sendProviderConnectEmail({
         data: {
           ...data,
+          assignedProvider: data.assignedProvider?.trim() || "Dr. Carmen Ramirez",
           requestedDate: format(date, "EEEE, MMMM d, yyyy"),
           requestedTime: time,
           schedulingNotes: data.schedulingNotes?.trim() || undefined,
@@ -495,9 +501,18 @@ export function ProviderConnectForm() {
               <input
                 id="assignedProvider"
                 className={inputClass}
-                value={data.assignedProvider}
+                value={data.assignedProvider || "Dr. Carmen Ramirez"}
                 onChange={(e) => setField("assignedProvider", e.target.value.slice(0, 120))}
-                placeholder="If known"
+                placeholder="Dr. Carmen Ramirez"
+              />
+            </Field>
+            <Field id="referredBy" label="Referred by">
+              <input
+                id="referredBy"
+                className={inputClass}
+                value={data.referredBy}
+                onChange={(e) => setField("referredBy", e.target.value.slice(0, 200))}
+                placeholder="Name of person or clinic who referred you"
               />
             </Field>
           </>
@@ -756,7 +771,7 @@ export function ProviderConnectForm() {
               </label>
 
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <Field id="attestationName" label="Signature (type full name)">
+                <Field id="attestationName" label="Printed full name">
                   <input
                     id="attestationName"
                     className={`${inputClass} font-[cursive]`}
@@ -775,6 +790,48 @@ export function ProviderConnectForm() {
                   />
                 </Field>
               </div>
+
+              <div className="mt-5 rounded-xl border border-primary/25 bg-background/50 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-foreground">Handwritten signature</p>
+                  <button
+                    type="button"
+                    onClick={() => setSignatureFullscreen(true)}
+                    className="rounded-full border border-primary px-4 py-2 text-xs uppercase tracking-[0.14em] text-primary transition hover:bg-primary hover:text-primary-foreground"
+                  >
+                    Sign full screen
+                  </button>
+                </div>
+                {data.clientSignatureDataUrl ? (
+                  <img
+                    src={data.clientSignatureDataUrl}
+                    alt="Your signature"
+                    className="mt-3 max-h-28 rounded-md border border-primary/20 bg-white p-2"
+                  />
+                ) : (
+                  <p className="mt-3 text-xs text-foreground/65">
+                    Open full screen to sign with your finger or mouse, then apply it to this form.
+                  </p>
+                )}
+                <div className="mt-3">
+                  <SignaturePad
+                    value={data.clientSignatureDataUrl || null}
+                    onChange={(url) => setField("clientSignatureDataUrl", url ?? "")}
+                    label="Quick sign"
+                    height={140}
+                  />
+                </div>
+              </div>
+
+              {signatureFullscreen ? (
+                <SignaturePad
+                  fullScreen
+                  value={data.clientSignatureDataUrl || null}
+                  onChange={(url) => setField("clientSignatureDataUrl", url ?? "")}
+                  label="Sign your intake form"
+                  onCloseFullScreen={() => setSignatureFullscreen(false)}
+                />
+              ) : null}
             </div>
 
             {date && time && (

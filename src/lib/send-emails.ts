@@ -15,6 +15,7 @@ const intakeSchema = z.object({
   primaryCarePhysician: z.string().max(120),
   firstAppointmentDate: z.string().max(40),
   assignedProvider: z.string().max(120),
+  referredBy: z.string().max(200).optional().default(""),
   prescriptionMedications: z.string().max(2000),
   supplementsPeptides: z.string().max(2000),
   medicationAllergies: z.string().max(1000),
@@ -35,6 +36,7 @@ const intakeSchema = z.object({
   allergicReactionDetails: z.string().max(1000),
   attestationName: z.string().min(1).max(120),
   attestationDate: z.string().min(1).max(40),
+  clientSignatureDataUrl: z.string().min(40).max(900_000),
   requestedDate: z.string().min(1).max(80),
   requestedTime: z.string().min(1).max(40),
   schedulingNotes: z.string().max(1000).optional(),
@@ -50,7 +52,10 @@ async function sendWithResend(options: {
     throw new Error("Email is not configured. Missing RESEND_API_KEY.");
   }
 
-  const to = process.env.RESEND_TO_EMAIL || "consultations@kianprive.com";
+  const to = [
+    process.env.RESEND_TO_EMAIL || "consultations@kianprive.com",
+    "millenniumedgemed@gmail.com",
+  ];
   const from = process.env.RESEND_FROM_EMAIL || "KIAN Privé <onboarding@resend.dev>";
 
   // Dynamic import keeps the Resend SDK out of the client bundle.
@@ -59,7 +64,7 @@ async function sendWithResend(options: {
 
   const { error } = await resend.emails.send({
     from,
-    to: [to],
+    to: [...new Set(to)],
     replyTo: options.replyTo,
     subject: options.subject,
     text: options.text,
