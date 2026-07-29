@@ -132,7 +132,7 @@ export function ProviderConnectForm() {
   const signaturePadRef = useRef<SignaturePadHandle | null>(null);
 
   useEffect(() => {
-    if (step !== 5) return;
+    if (step !== 4) return;
     requestAnimationFrame(() => {
       document.getElementById("client-signature")?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
@@ -144,16 +144,12 @@ export function ProviderConnectForm() {
 
   const validateStep = (index: number): string | null => {
     if (index === 0) {
-      if (!date) return "Please select a consultation date.";
-      if (!time) return "Please select a time slot.";
-    }
-    if (index === 1) {
       if (!data.fullName.trim()) return "Please enter your full name.";
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return "Please enter a valid email.";
       if (!data.phone.trim()) return "Please enter your phone number.";
       if (!data.dateOfBirth) return "Please enter your date of birth.";
     }
-    if (index === 5) {
+    if (index === 4) {
       if (!data.familyMtcMen2) return "Please answer the family history question.";
       if (!data.allergicReactionAny) return "Please answer the allergy question.";
       if (data.allergicReactionAny === "Yes" && !data.allergicReactionDetails.trim()) {
@@ -170,6 +166,10 @@ export function ProviderConnectForm() {
         return "Please add your handwritten signature (open full screen to sign).";
       }
     }
+    if (index === 5) {
+      if (!date) return "Please select a consultation date.";
+      if (!time) return "Please select a time slot.";
+    }
     return null;
   };
 
@@ -180,7 +180,7 @@ export function ProviderConnectForm() {
       return;
     }
     setError(null);
-    if (step === 1 && !data.attestationName.trim()) {
+    if (step === 0 && !data.attestationName.trim()) {
       setField("attestationName", data.fullName);
     }
     setStep((s) => Math.min(s + 1, PROVIDER_CONNECT_STEPS.length - 1));
@@ -218,15 +218,17 @@ export function ProviderConnectForm() {
       setField("clientSignatureDataUrl", committedSignature);
     }
 
-    const msg = validateStep(5);
-    if (msg || !payload.clientSignatureDataUrl || payload.clientSignatureDataUrl.length < 40) {
-      setError(msg ?? "Please add your handwritten signature on this step, then tap Apply signature.");
+    const consentMsg = validateStep(4);
+    if (consentMsg || !payload.clientSignatureDataUrl || payload.clientSignatureDataUrl.length < 40) {
+      setError(consentMsg ?? "Please add your handwritten signature on step 5, then tap Apply signature.");
+      setStep(4);
       document.getElementById("client-signature")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
-    if (!date || !time) {
-      setError("Please select a date and time.");
-      setStep(0);
+    const scheduleMsg = validateStep(5);
+    if (scheduleMsg || !date || !time) {
+      setError(scheduleMsg ?? "Please select a consultation date and time.");
+      setStep(5);
       return;
     }
 
@@ -295,10 +297,10 @@ export function ProviderConnectForm() {
           <div className="h-px w-16 bg-primary/40" />
         </div>
         <h2 className="mt-4 text-2xl text-foreground sm:text-3xl" style={serif}>
-          Book & Complete Intake
+          Complete Intake & Book
         </h2>
         <p className="mt-2 max-w-lg text-sm text-foreground/75" style={serif}>
-          Choose your consultation time, then complete the compounded wellness intake in one
+          Complete the compounded wellness intake first, then choose your consultation time in one
           guided flow. Everything is sent securely to our team.
         </p>
         <a
@@ -330,8 +332,12 @@ export function ProviderConnectForm() {
       </ol>
 
       <div className="mt-8 space-y-5" aria-live="polite">
-        {step === 0 && (
+        {step === 5 && (
           <>
+            <p className="text-center text-sm text-foreground/80" style={serif}>
+              Last step — choose your preferred consultation date and time. We will confirm availability by
+              email after you submit.
+            </p>
             <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
               <div className="flex flex-col items-center">
                 <div className="mb-3 flex items-center gap-2 text-sm text-foreground/80" style={serif}>
@@ -420,7 +426,7 @@ export function ProviderConnectForm() {
           </>
         )}
 
-        {step === 1 && (
+        {step === 0 && (
           <>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field id="fullName" label="Full Name">
@@ -550,7 +556,7 @@ export function ProviderConnectForm() {
           </>
         )}
 
-        {step === 2 && (
+        {step === 1 && (
           <>
             <Field id="prescriptionMedications" label="Prescription Medications (name, dose, frequency)">
               <textarea
@@ -602,7 +608,7 @@ export function ProviderConnectForm() {
           </>
         )}
 
-        {step === 3 && (
+        {step === 2 && (
           <>
             <p className="text-sm text-foreground/80">Please check any conditions that apply to you:</p>
             <CheckboxGrid
@@ -650,7 +656,7 @@ export function ProviderConnectForm() {
           </>
         )}
 
-        {step === 4 && (
+        {step === 3 && (
           <>
             <p className="text-sm text-foreground/80">
               Have you previously used any of the following? (Select all that apply)
@@ -702,7 +708,7 @@ export function ProviderConnectForm() {
           </>
         )}
 
-        {step === 5 && (
+        {step === 4 && (
           <>
             <div
               id="client-signature"
@@ -714,7 +720,7 @@ export function ProviderConnectForm() {
                     Handwritten signature <span className="text-destructive">*</span>
                   </p>
                   <p className="mt-1 text-xs text-foreground/70">
-                    Required on step 6 — sign below, tap Apply signature, then submit.
+                    Required on step 5 — sign below, tap Apply signature, then continue to scheduling.
                   </p>
                 </div>
                 <button
@@ -876,15 +882,6 @@ export function ProviderConnectForm() {
                 </Field>
               </div>
             </div>
-
-            {date && time && (
-              <p className="text-center text-sm text-foreground/80" style={serif}>
-                Submitting for{" "}
-                <span className="font-semibold text-foreground">
-                  {format(date, "EEEE, MMMM d")} at {time}
-                </span>
-              </p>
-            )}
           </>
         )}
       </div>

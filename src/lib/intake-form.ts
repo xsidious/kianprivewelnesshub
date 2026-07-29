@@ -88,12 +88,12 @@ export const CONTRAINDICATIONS = [
 ] as const;
 
 export const PROVIDER_CONNECT_STEPS = [
-  { id: 1, title: "Schedule" },
-  { id: 2, title: "Patient Info" },
-  { id: 3, title: "Medications" },
-  { id: 4, title: "History" },
-  { id: 5, title: "GLP History" },
-  { id: 6, title: "Screening & Consent" },
+  { id: 1, title: "Patient Info" },
+  { id: 2, title: "Medications" },
+  { id: 3, title: "History" },
+  { id: 4, title: "GLP History" },
+  { id: 5, title: "Screening & Consent" },
+  { id: 6, title: "Schedule" },
 ] as const;
 
 /** @deprecated use PROVIDER_CONNECT_STEPS */

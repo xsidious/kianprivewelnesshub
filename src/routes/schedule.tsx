@@ -125,7 +125,7 @@ function SchedulePage() {
             className="mt-3 max-w-lg text-center text-sm leading-relaxed text-foreground/80"
             style={serif}
           >
-            Schedule your consultation and complete the compounded wellness intake in one secure
+            Complete the compounded wellness intake first, then choose your consultation time in one secure
             flow. Our team will confirm availability by email.
           </p>
         </div>
