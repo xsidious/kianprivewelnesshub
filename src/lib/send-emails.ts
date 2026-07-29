@@ -36,7 +36,13 @@ const intakeSchema = z.object({
   allergicReactionDetails: z.string().max(1000),
   attestationName: z.string().min(1).max(120),
   attestationDate: z.string().min(1).max(40),
-  clientSignatureDataUrl: z.string().min(40).max(900_000),
+  clientSignatureDataUrl: z.preprocess(
+    (value) => (value === undefined || value === null ? "" : value),
+    z
+      .string()
+      .min(40, "Please add your handwritten signature on the last step before submitting.")
+      .max(900_000),
+  ),
   requestedDate: z.string().min(1).max(80),
   requestedTime: z.string().min(1).max(40),
   schedulingNotes: z.string().max(1000).optional(),

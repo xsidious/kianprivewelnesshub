@@ -1,6 +1,4 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 
 type Props = {
   value?: string | null;
@@ -11,17 +9,35 @@ type Props = {
   onCloseFullScreen?: () => void;
 };
 
-export function SignaturePad({
-  value,
-  onChange,
-  label = "Signature",
-  height = 180,
-  fullScreen = false,
-  onCloseFullScreen,
-}: Props) {
+export type SignaturePadHandle = {
+  /** Saves the current canvas strokes and returns the PNG data URL, if any. */
+  commit: () => string | null;
+};
+
+export const SignaturePad = forwardRef<SignaturePadHandle, Props>(function SignaturePad(
+  {
+    value,
+    onChange,
+    label = "Signature",
+    height = 180,
+    fullScreen = false,
+    onCloseFullScreen,
+  },
+  ref,
+) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawing = useRef(false);
+  const hasStrokeRef = useRef(Boolean(value));
   const [hasStroke, setHasStroke] = useState(Boolean(value));
+
+  useEffect(() => {
+    hasStrokeRef.current = hasStroke;
+  }, [hasStroke]);
+
+  useEffect(() => {
+    hasStrokeRef.current = Boolean(value);
+    setHasStroke(Boolean(value));
+  }, [value]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -78,14 +94,18 @@ export function SignaturePad({
     const p = point(e);
     ctx.lineTo(p.x, p.y);
     ctx.stroke();
+    hasStrokeRef.current = true;
     setHasStroke(true);
   }
 
-  function commit() {
+  function commit(): string | null {
     drawing.current = false;
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    if (hasStroke || value) onChange(canvas.toDataURL("image/png"));
+    if (!canvas) return value ?? null;
+    if (!hasStrokeRef.current && !value) return null;
+    const dataUrl = canvas.toDataURL("image/png");
+    onChange(dataUrl);
+    return dataUrl;
   }
 
   function clear() {
@@ -93,10 +113,18 @@ export function SignaturePad({
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
     ctx.fillStyle = "#fffdf9";
-    ctx.fillRect(0, 0, canvas.clientWidth, fullScreen ? Math.max(280, window.innerHeight - 180) : height);
+    ctx.fillRect(
+      0,
+      0,
+      canvas.clientWidth,
+      fullScreen ? Math.max(280, window.innerHeight - 180) : height,
+    );
+    hasStrokeRef.current = false;
     setHasStroke(false);
     onChange(null);
   }
+
+  useImperativeHandle(ref, () => ({ commit }), []);
 
   const body = (
     <div className={fullScreen ? "flex h-full flex-col bg-[#0f0d0b] p-4 text-foreground" : ""}>
@@ -106,18 +134,16 @@ export function SignaturePad({
           <button type="button" onClick={clear} className="text-xs underline underline-offset-2">
             Clear
           </button>
-          {fullScreen && onCloseFullScreen ? (
-            <button
-              type="button"
-              onClick={() => {
-                commit();
-                onCloseFullScreen();
-              }}
-              className="rounded-full border border-primary bg-primary px-3 py-1 text-xs text-primary-foreground"
-            >
-              Apply signature
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={() => {
+              commit();
+              if (fullScreen && onCloseFullScreen) onCloseFullScreen();
+            }}
+            className="rounded-full border border-primary bg-primary px-3 py-1 text-xs text-primary-foreground"
+          >
+            Apply signature
+          </button>
         </div>
       </div>
       <canvas
@@ -130,7 +156,7 @@ export function SignaturePad({
         onPointerLeave={commit}
       />
       {!hasStroke && !value ? (
-        <p className="mt-2 text-xs text-foreground/60">Sign using mouse or finger.</p>
+        <p className="mt-2 text-xs text-foreground/60">Sign using your mouse or finger, then tap Apply.</p>
       ) : null}
     </div>
   );
@@ -144,4 +170,4 @@ export function SignaturePad({
       </div>
     </div>
   );
-}
+});

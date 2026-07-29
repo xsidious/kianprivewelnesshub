@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import {
   CalendarIcon,
@@ -21,7 +21,7 @@ import {
   type IntakeFormData,
 } from "@/lib/intake-form";
 import { sendProviderConnectEmail } from "@/lib/send-emails";
-import { SignaturePad } from "@/components/SignaturePad";
+import { SignaturePad, type SignaturePadHandle } from "@/components/SignaturePad";
 
 const serif = { fontFamily: '"Cormorant Garamond", serif' } as const;
 
@@ -129,6 +129,14 @@ export function ProviderConnectForm() {
   const [sending, setSending] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [signatureFullscreen, setSignatureFullscreen] = useState(false);
+  const signaturePadRef = useRef<SignaturePadHandle | null>(null);
+
+  useEffect(() => {
+    if (step !== 5) return;
+    requestAnimationFrame(() => {
+      document.getElementById("client-signature")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, [step]);
 
   const setField = <K extends keyof IntakeFormData>(key: K, value: IntakeFormData[K]) => {
     setData((prev) => ({ ...prev, [key]: value }));
@@ -183,10 +191,37 @@ export function ProviderConnectForm() {
     setStep((s) => Math.max(s - 1, 0));
   };
 
+  const parseSubmitError = (err: unknown): string => {
+    if (!(err instanceof Error)) return "Unable to send your request. Please try again.";
+    const raw = err.message.trim();
+    if (raw.startsWith("[")) {
+      try {
+        const issues = JSON.parse(raw) as Array<{ path?: Array<string | number>; message?: string }>;
+        const signatureIssue = issues.find((issue) => issue.path?.includes("clientSignatureDataUrl"));
+        if (signatureIssue?.message) return signatureIssue.message;
+        if (issues[0]?.message) return issues[0].message;
+      } catch {
+        // fall through
+      }
+    }
+    return raw || "Unable to send your request. Please try again.";
+  };
+
   const handleSubmit = async () => {
+    const committedSignature =
+      signaturePadRef.current?.commit() ?? data.clientSignatureDataUrl ?? "";
+    const payload: IntakeFormData = {
+      ...data,
+      clientSignatureDataUrl: committedSignature,
+    };
+    if (committedSignature !== data.clientSignatureDataUrl) {
+      setField("clientSignatureDataUrl", committedSignature);
+    }
+
     const msg = validateStep(5);
-    if (msg) {
-      setError(msg);
+    if (msg || !payload.clientSignatureDataUrl || payload.clientSignatureDataUrl.length < 40) {
+      setError(msg ?? "Please add your handwritten signature on this step, then tap Apply signature.");
+      document.getElementById("client-signature")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
     if (!date || !time) {
@@ -200,21 +235,18 @@ export function ProviderConnectForm() {
     try {
       await sendProviderConnectEmail({
         data: {
-          ...data,
-          assignedProvider: data.assignedProvider?.trim() || "Dr. Carmen Ramirez",
+          ...payload,
+          assignedProvider: payload.assignedProvider?.trim() || "Dr. Carmen Ramirez",
           requestedDate: format(date, "EEEE, MMMM d, yyyy"),
           requestedTime: time,
-          schedulingNotes: data.schedulingNotes?.trim() || undefined,
+          schedulingNotes: payload.schedulingNotes?.trim() || undefined,
         },
       });
       setSubmitted(true);
     } catch (err) {
       console.error(err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to send your request. Please try again.",
-      );
+      setError(parseSubmitError(err));
+      document.getElementById("client-signature")?.scrollIntoView({ behavior: "smooth", block: "center" });
     } finally {
       setSending(false);
     }
@@ -672,6 +704,59 @@ export function ProviderConnectForm() {
 
         {step === 5 && (
           <>
+            <div
+              id="client-signature"
+              className="rounded-xl border-2 border-primary/40 bg-primary/5 p-4 sm:p-5"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    Handwritten signature <span className="text-destructive">*</span>
+                  </p>
+                  <p className="mt-1 text-xs text-foreground/70">
+                    Required on step 6 — sign below, tap Apply signature, then submit.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSignatureFullscreen(true)}
+                  className="rounded-full border border-primary bg-primary px-4 py-2 text-xs uppercase tracking-[0.14em] text-primary-foreground transition hover:bg-primary/90"
+                >
+                  Sign full screen
+                </button>
+              </div>
+              {data.clientSignatureDataUrl ? (
+                <img
+                  src={data.clientSignatureDataUrl}
+                  alt="Your signature"
+                  className="mt-4 max-h-32 rounded-md border border-primary/20 bg-white p-2"
+                />
+              ) : (
+                <p className="mt-3 rounded-md border border-dashed border-primary/30 bg-background/60 px-3 py-2 text-xs text-foreground/70">
+                  No signature yet — draw in the box below or use Sign full screen.
+                </p>
+              )}
+              <div className="mt-4">
+                <SignaturePad
+                  ref={signaturePadRef}
+                  value={data.clientSignatureDataUrl || null}
+                  onChange={(url) => setField("clientSignatureDataUrl", url ?? "")}
+                  label="Sign here"
+                  height={160}
+                />
+              </div>
+            </div>
+
+            {signatureFullscreen ? (
+              <SignaturePad
+                fullScreen
+                value={data.clientSignatureDataUrl || null}
+                onChange={(url) => setField("clientSignatureDataUrl", url ?? "")}
+                label="Sign your intake form"
+                onCloseFullScreen={() => setSignatureFullscreen(false)}
+              />
+            ) : null}
+
             <p className="text-sm text-foreground/80">
               Personal history of any of the following (may affect treatment eligibility):
             </p>
@@ -790,48 +875,6 @@ export function ProviderConnectForm() {
                   />
                 </Field>
               </div>
-
-              <div className="mt-5 rounded-xl border border-primary/25 bg-background/50 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-foreground">Handwritten signature</p>
-                  <button
-                    type="button"
-                    onClick={() => setSignatureFullscreen(true)}
-                    className="rounded-full border border-primary px-4 py-2 text-xs uppercase tracking-[0.14em] text-primary transition hover:bg-primary hover:text-primary-foreground"
-                  >
-                    Sign full screen
-                  </button>
-                </div>
-                {data.clientSignatureDataUrl ? (
-                  <img
-                    src={data.clientSignatureDataUrl}
-                    alt="Your signature"
-                    className="mt-3 max-h-28 rounded-md border border-primary/20 bg-white p-2"
-                  />
-                ) : (
-                  <p className="mt-3 text-xs text-foreground/65">
-                    Open full screen to sign with your finger or mouse, then apply it to this form.
-                  </p>
-                )}
-                <div className="mt-3">
-                  <SignaturePad
-                    value={data.clientSignatureDataUrl || null}
-                    onChange={(url) => setField("clientSignatureDataUrl", url ?? "")}
-                    label="Quick sign"
-                    height={140}
-                  />
-                </div>
-              </div>
-
-              {signatureFullscreen ? (
-                <SignaturePad
-                  fullScreen
-                  value={data.clientSignatureDataUrl || null}
-                  onChange={(url) => setField("clientSignatureDataUrl", url ?? "")}
-                  label="Sign your intake form"
-                  onCloseFullScreen={() => setSignatureFullscreen(false)}
-                />
-              ) : null}
             </div>
 
             {date && time && (
