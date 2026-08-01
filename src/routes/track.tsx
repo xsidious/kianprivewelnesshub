@@ -95,7 +95,11 @@ function TrackPage() {
           statusNote: data.intake.statusNote,
           hasAccount: data.intake.hasAccount,
         });
-        await loadMessages(nextEmail, nextRef);
+        if (Array.isArray(data.intake.messages) && data.intake.messages.length > 0) {
+          setMessages(data.intake.messages);
+        } else {
+          await loadMessages(nextEmail, nextRef);
+        }
       }
     } catch {
       setMessage("Network error. Please try again.");
