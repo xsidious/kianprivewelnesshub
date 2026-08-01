@@ -96,34 +96,33 @@ function Index() {
 
 function WellnessCompoundingHero() {
   return (
-    <section className="mt-14 w-full">
+    <section id="compendium" className="mt-14 w-full scroll-mt-20">
       <div className="relative w-full overflow-hidden rounded-2xl shadow-[0_10px_40px_-20px_rgba(160,130,70,0.45)]">
-        <div className="relative">
+        <div className="relative min-h-[240px] sm:min-h-[320px] md:min-h-[400px]">
           <img
             src={peptidesHero}
             alt="Peptide vial and injectable pen on a cream marble surface"
             width={1344}
             height={672}
             loading="lazy"
-            className="h-[320px] w-full object-cover sm:h-[420px] md:h-[520px] lg:h-[600px]"
+            className="absolute inset-0 h-full w-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/30" />
-          <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center sm:px-6">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/55 to-black/35" />
+          <div className="relative z-10 flex flex-col items-center justify-center px-5 py-12 text-center sm:px-8 sm:py-16 md:py-20">
             <div className="h-px w-16 bg-primary/80 sm:w-24" />
             <h2
-              className="mt-4 text-3xl text-white sm:text-4xl lg:text-5xl"
+              className="mt-5 text-3xl leading-tight text-white sm:text-4xl lg:text-5xl"
               style={{ fontFamily: '"Cormorant Garamond", serif' }}
             >
               Wellness Compounding Guide
             </h2>
-            <p className="mt-3 max-w-md px-4 text-sm text-white/90 sm:text-base">
+            <p className="mt-4 max-w-md text-sm leading-relaxed text-white/90 sm:text-base">
               A brief description of each peptide and compound in the collection.
             </p>
-
-            <MedicalDisclaimer overlay />
           </div>
         </div>
       </div>
+      <MedicalDisclaimer className="mt-6 w-full sm:mt-8" />
     </section>
   );
 }
@@ -480,42 +479,9 @@ function AftercarePrograms() {
 
 function MedicalDisclaimer({
   className = "mt-16 w-full sm:mt-20",
-  overlay = false,
 }: {
   className?: string;
-  overlay?: boolean;
 }) {
-  if (overlay) {
-    return (
-      <div className="mt-6 w-full max-w-3xl px-4 text-center sm:mt-8 sm:px-6" aria-labelledby="compendium-disclaimer-heading">
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/30 bg-white/10">
-            <AlertTriangle className="h-4 w-4 text-primary" aria-hidden="true" />
-          </div>
-          <div>
-            <h2
-              id="compendium-disclaimer-heading"
-              className="text-base text-white/95 sm:text-lg"
-              style={{ fontFamily: '"Cormorant Garamond", serif' }}
-            >
-              Medical Disclaimer
-            </h2>
-            <p className="mt-1 text-xs leading-relaxed text-white/80 sm:text-sm">
-              The Wellness Compounding Guide is provided for educational and informational purposes only. It is not intended as
-              medical advice, diagnosis, or treatment recommendations. Peptide therapies should only be pursued under
-              the guidance of a qualified, licensed healthcare professional who can evaluate your individual health
-              history and goals. Individual results may vary, and not all compounds are appropriate for every person.
-            </p>
-            <p className="mt-2 text-xs leading-relaxed text-white/80 sm:text-sm">
-              Always consult a physician or another qualified provider before starting, stopping, or modifying any
-              wellness protocol.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <section className={className} aria-labelledby="compendium-disclaimer-heading">
       <div className="rounded-2xl border border-primary/20 bg-card/60 p-6 shadow-[0_10px_30px_-20px_rgba(160,130,70,0.35)] sm:p-8">
@@ -580,7 +546,7 @@ function PeptideGlossary() {
   };
 
   return (
-    <section id="compendium" className="mt-2 w-full pb-10 pt-2 sm:mt-4 sm:pb-20 sm:pt-4">
+    <section className="mt-2 w-full pb-10 pt-2 sm:mt-4 sm:pb-20 sm:pt-4">
       <div>
         {/* Mobile category strip */}
         <div className="mt-6 overflow-x-auto overscroll-x-contain lg:hidden">
