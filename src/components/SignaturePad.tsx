@@ -28,47 +28,74 @@ export const SignaturePad = forwardRef<SignaturePadHandle, Props>(function Signa
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawing = useRef(false);
   const hasStrokeRef = useRef(Boolean(value));
+  const committedRef = useRef<string | null>(value ?? null);
   const [hasStroke, setHasStroke] = useState(Boolean(value));
 
-  useEffect(() => {
-    hasStrokeRef.current = hasStroke;
-  }, [hasStroke]);
+  function canvasCssHeight() {
+    return fullScreen ? Math.max(280, window.innerHeight - 180) : height;
+  }
 
-  useEffect(() => {
-    hasStrokeRef.current = Boolean(value);
-    setHasStroke(Boolean(value));
-  }, [value]);
+  function drawBackground(ctx: CanvasRenderingContext2D, width: number, h: number) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const ratio = window.devicePixelRatio || 1;
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "#1f1a15";
+    ctx.lineWidth = 2.4;
+    ctx.fillStyle = "#fffdf9";
+    ctx.fillRect(0, 0, width, h);
+  }
 
-  useEffect(() => {
+  function paintFromSource(source: string | null | undefined) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const paint = () => {
-      const ratio = window.devicePixelRatio || 1;
-      const width = canvas.clientWidth;
-      const h = fullScreen ? Math.max(280, window.innerHeight - 180) : height;
-      canvas.width = Math.max(1, Math.floor(width * ratio));
-      canvas.height = Math.max(1, Math.floor(h * ratio));
-      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.strokeStyle = "#1f1a15";
-      ctx.lineWidth = 2.4;
-      ctx.fillStyle = "#fffdf9";
-      ctx.fillRect(0, 0, width, h);
-      if (value) {
-        const img = new Image();
-        img.onload = () => ctx.drawImage(img, 0, 0, width, h);
-        img.src = value;
-      }
-    };
+    const ratio = window.devicePixelRatio || 1;
+    const width = canvas.clientWidth;
+    const h = canvasCssHeight();
+    canvas.width = Math.max(1, Math.floor(width * ratio));
+    canvas.height = Math.max(1, Math.floor(h * ratio));
+    drawBackground(ctx, width, h);
 
-    paint();
-    window.addEventListener("resize", paint);
-    return () => window.removeEventListener("resize", paint);
-  }, [height, value, fullScreen]);
+    if (!source) return;
+    const img = new Image();
+    img.onload = () => {
+      const live = canvasRef.current?.getContext("2d");
+      if (!live) return;
+      live.drawImage(img, 0, 0, width, h);
+    };
+    img.src = source;
+  }
+
+  // Initial size + resize only — do not wipe strokes when parent value updates from our own commit.
+  useEffect(() => {
+    paintFromSource(committedRef.current);
+    const onResize = () => {
+      if (drawing.current) return;
+      const canvas = canvasRef.current;
+      const snapshot =
+        committedRef.current ||
+        (hasStrokeRef.current && canvas ? canvas.toDataURL("image/png") : null);
+      if (snapshot && !committedRef.current) committedRef.current = snapshot;
+      paintFromSource(snapshot);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [height, fullScreen]);
+
+  // Sync when parent clears / replaces signature from outside (not our own Apply).
+  useEffect(() => {
+    const next = value ?? null;
+    if (next === committedRef.current) return;
+    committedRef.current = next;
+    hasStrokeRef.current = Boolean(next);
+    setHasStroke(Boolean(next));
+    paintFromSource(next);
+  }, [value]);
 
   function point(e: React.PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current!;
@@ -94,16 +121,25 @@ export const SignaturePad = forwardRef<SignaturePadHandle, Props>(function Signa
     const p = point(e);
     ctx.lineTo(p.x, p.y);
     ctx.stroke();
-    hasStrokeRef.current = true;
-    setHasStroke(true);
+    if (!hasStrokeRef.current) {
+      hasStrokeRef.current = true;
+      setHasStroke(true);
+    }
+  }
+
+  function endStroke() {
+    drawing.current = false;
   }
 
   function commit(): string | null {
     drawing.current = false;
     const canvas = canvasRef.current;
-    if (!canvas) return value ?? null;
-    if (!hasStrokeRef.current && !value) return null;
+    if (!canvas) return committedRef.current;
+    if (!hasStrokeRef.current && !committedRef.current) return null;
     const dataUrl = canvas.toDataURL("image/png");
+    committedRef.current = dataUrl;
+    hasStrokeRef.current = true;
+    setHasStroke(true);
     onChange(dataUrl);
     return dataUrl;
   }
@@ -112,19 +148,16 @@ export const SignaturePad = forwardRef<SignaturePadHandle, Props>(function Signa
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
-    ctx.fillStyle = "#fffdf9";
-    ctx.fillRect(
-      0,
-      0,
-      canvas.clientWidth,
-      fullScreen ? Math.max(280, window.innerHeight - 180) : height,
-    );
+    const width = canvas.clientWidth;
+    const h = canvasCssHeight();
+    drawBackground(ctx, width, h);
     hasStrokeRef.current = false;
     setHasStroke(false);
+    committedRef.current = null;
     onChange(null);
   }
 
-  useImperativeHandle(ref, () => ({ commit }), []);
+  useImperativeHandle(ref, () => ({ commit }), [onChange]);
 
   const body = (
     <div className={fullScreen ? "flex h-full flex-col bg-[#0f0d0b] p-4 text-foreground" : ""}>
@@ -152,11 +185,11 @@ export const SignaturePad = forwardRef<SignaturePadHandle, Props>(function Signa
         style={{ height: fullScreen ? "min(70vh, 520px)" : height, minHeight: fullScreen ? 280 : height }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
-        onPointerUp={commit}
-        onPointerLeave={commit}
+        onPointerUp={endStroke}
+        onPointerCancel={endStroke}
       />
-      {!hasStroke && !value ? (
-        <p className="mt-2 text-xs text-foreground/60">Sign using your mouse or finger, then tap Apply.</p>
+      {!hasStroke ? (
+        <p className="mt-2 text-xs text-foreground/60">Sign using your mouse or finger, then tap Apply signature.</p>
       ) : null}
     </div>
   );

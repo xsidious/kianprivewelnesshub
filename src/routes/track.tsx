@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
 const kianLogo = "/assets/kian-prive-logo.png";
@@ -7,13 +7,22 @@ const KIAN_TRACK_API = "https://www.kianprive.com/api/intake/track";
 const KIAN_CLAIM_API = "https://www.kianprive.com/api/intake/claim-account";
 const KIAN_LOGIN = "https://www.kianprive.com/login?callbackUrl=/dashboard/intake";
 
+type TrackSearch = {
+  ref?: string;
+  email?: string;
+};
+
 export const Route = createFileRoute("/track")({
+  validateSearch: (search: Record<string, unknown>): TrackSearch => ({
+    ref: typeof search.ref === "string" ? search.ref : undefined,
+    email: typeof search.email === "string" ? search.email : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Track Your Intake — KIAN Privé Wellness Hub" },
       {
         name: "description",
-        content: "Check your Provider Connect intake status with your email and reference ID.",
+        content: "Check your Provider Connect intake status with your email and request code.",
       },
     ],
   }),
@@ -23,12 +32,14 @@ export const Route = createFileRoute("/track")({
 const serif = { fontFamily: '"Cormorant Garamond", serif' } as const;
 
 function TrackPage() {
+  const search = Route.useSearch();
   const [mode, setMode] = useState<"track" | "create">("track");
-  const [email, setEmail] = useState("");
-  const [referenceId, setReferenceId] = useState("");
+  const [email, setEmail] = useState(search.email ?? "");
+  const [referenceId, setReferenceId] = useState((search.ref ?? "").toUpperCase());
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [autoChecked, setAutoChecked] = useState(false);
   const [result, setResult] = useState<{
     statusLabel: string;
     fullName: string;
@@ -37,8 +48,7 @@ function TrackPage() {
     hasAccount: boolean;
   } | null>(null);
 
-  async function onTrack(e: FormEvent) {
-    e.preventDefault();
+  async function lookupStatus(nextEmail = email, nextRef = referenceId) {
     setBusy(true);
     setMessage("");
     setResult(null);
@@ -46,7 +56,7 @@ function TrackPage() {
       const res = await fetch(KIAN_TRACK_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, referenceId }),
+        body: JSON.stringify({ email: nextEmail, referenceId: nextRef }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -65,6 +75,22 @@ function TrackPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  useEffect(() => {
+    if (autoChecked) return;
+    if (search.email) setEmail(search.email);
+    if (search.ref) setReferenceId(search.ref.toUpperCase());
+    if (search.email && search.ref) {
+      setAutoChecked(true);
+      void lookupStatus(search.email, search.ref);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.email, search.ref, autoChecked]);
+
+  async function onTrack(e: FormEvent) {
+    e.preventDefault();
+    await lookupStatus();
   }
 
   async function onCreate(e: FormEvent) {
@@ -104,7 +130,7 @@ function TrackPage() {
             Back to home
           </Link>
           <a
-            href="https://www.kianprive.com/track-intake"
+            href={`https://www.kianprive.com/track-intake?ref=${encodeURIComponent(referenceId)}&email=${encodeURIComponent(email)}`}
             className="text-xs uppercase tracking-[0.14em] text-primary underline-offset-4 hover:underline"
           >
             Open on Privé site
@@ -116,7 +142,7 @@ function TrackPage() {
           Track your intake
         </h1>
         <p className="mt-3 text-center text-sm text-foreground/75" style={serif}>
-          Enter the email and reference ID from your confirmation message.
+          Use your email and request code (example: KP-7F3A-9C2E).
         </p>
 
         <div className="mt-6 flex gap-2">
@@ -153,12 +179,13 @@ function TrackPage() {
               />
             </label>
             <label className="block text-xs uppercase tracking-[0.2em] text-foreground/70">
-              Reference ID
+              Request code
               <input
                 required
                 value={referenceId}
-                onChange={(e) => setReferenceId(e.target.value)}
-                className="mt-1.5 min-h-11 w-full rounded-lg border border-primary/25 bg-background/60 px-4 py-2.5 text-sm"
+                onChange={(e) => setReferenceId(e.target.value.toUpperCase())}
+                className="mt-1.5 min-h-11 w-full rounded-lg border border-primary/25 bg-background/60 px-4 py-2.5 font-mono text-sm tracking-[0.12em]"
+                placeholder="KP-XXXX-XXXX"
               />
             </label>
             <button
@@ -186,12 +213,13 @@ function TrackPage() {
               />
             </label>
             <label className="block text-xs uppercase tracking-[0.2em] text-foreground/70">
-              Reference ID
+              Request code
               <input
                 required
                 value={referenceId}
-                onChange={(e) => setReferenceId(e.target.value)}
-                className="mt-1.5 min-h-11 w-full rounded-lg border border-primary/25 bg-background/60 px-4 py-2.5 text-sm"
+                onChange={(e) => setReferenceId(e.target.value.toUpperCase())}
+                className="mt-1.5 min-h-11 w-full rounded-lg border border-primary/25 bg-background/60 px-4 py-2.5 font-mono text-sm tracking-[0.12em]"
+                placeholder="KP-XXXX-XXXX"
               />
             </label>
             <label className="block text-xs uppercase tracking-[0.2em] text-foreground/70">
@@ -225,7 +253,7 @@ function TrackPage() {
               {result.statusLabel}
             </h2>
             <p className="mt-1 text-sm text-foreground/75">
-              {result.fullName} · Ref {result.referenceId}
+              {result.fullName} · <span className="font-mono tracking-[0.12em]">{result.referenceId}</span>
             </p>
             {result.statusNote ? (
               <p className="mt-3 rounded-lg border border-primary/20 bg-background/50 px-3 py-2 text-sm">

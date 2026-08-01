@@ -111,6 +111,7 @@ export function ProviderConnectForm() {
   const [submitted, setSubmitted] = useState(false);
   const [referenceId, setReferenceId] = useState<string | null>(null);
   const [trackUrl, setTrackUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [signatureFullscreen, setSignatureFullscreen] = useState(false);
   const signaturePadRef = useRef<SignaturePadHandle | null>(null);
 
@@ -120,6 +121,17 @@ export function ProviderConnectForm() {
       document.getElementById("client-signature")?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
   }, [step]);
+
+  useEffect(() => {
+    if (!submitted || !referenceId) return;
+    void navigator.clipboard.writeText(referenceId).then(
+      () => {
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 2500);
+      },
+      () => undefined,
+    );
+  }, [submitted, referenceId]);
 
   const setField = <K extends keyof IntakeFormData>(key: K, value: IntakeFormData[K]) => {
     setData((prev) => ({ ...prev, [key]: value }));
@@ -151,7 +163,7 @@ export function ProviderConnectForm() {
       }
       if (!data.attestationDate) return "Please select the attestation date.";
       if (!data.clientSignatureDataUrl || data.clientSignatureDataUrl.length < 40) {
-        return "Please add your handwritten signature (open full screen to sign).";
+        return "Please add your handwritten signature, then tap Apply signature.";
       }
     }
     return null;
@@ -206,7 +218,7 @@ export function ProviderConnectForm() {
 
     const consentMsg = validateStep(4);
     if (consentMsg || !payload.clientSignatureDataUrl || payload.clientSignatureDataUrl.length < 40) {
-      setError(consentMsg ?? "Please add your handwritten signature on step 5, then tap Apply signature.");
+      setError(consentMsg ?? "Please add your handwritten signature, then tap Apply signature.");
       setStep(4);
       document.getElementById("client-signature")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
@@ -222,7 +234,8 @@ export function ProviderConnectForm() {
           schedulingNotes: payload.schedulingNotes?.trim() || undefined,
         },
       });
-      setReferenceId(result.referenceId ?? null);
+      const code = (result.trackingToken || result.referenceId || "").trim().toUpperCase() || null;
+      setReferenceId(code);
       setTrackUrl(result.trackUrl ?? null);
       setSubmitted(true);
     } catch (err) {
@@ -235,11 +248,25 @@ export function ProviderConnectForm() {
   };
 
   if (submitted) {
+    const hubTrack = referenceId
+      ? `/track?ref=${encodeURIComponent(referenceId)}&email=${encodeURIComponent(data.email)}`
+      : "/track";
     const priveTrack =
       trackUrl ||
       (referenceId
         ? `https://www.kianprive.com/track-intake?ref=${encodeURIComponent(referenceId)}&email=${encodeURIComponent(data.email)}`
         : "https://www.kianprive.com/track-intake");
+
+    const copyCode = async () => {
+      if (!referenceId) return;
+      try {
+        await navigator.clipboard.writeText(referenceId);
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 2000);
+      } catch {
+        setCopied(false);
+      }
+    };
 
     return (
       <section
@@ -257,28 +284,44 @@ export function ProviderConnectForm() {
           review your information and follow up with next steps.
         </p>
         {referenceId ? (
-          <div className="mx-auto mt-5 max-w-md rounded-xl border border-primary/25 bg-background/50 px-4 py-3 text-left">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-primary">Your reference ID</p>
-            <p className="mt-1 break-all font-mono text-sm text-foreground">{referenceId}</p>
-            <p className="mt-2 text-xs text-foreground/70">
-              Save this ID — it was also emailed to {data.email}. Use it anytime to check status.
+          <div className="mx-auto mt-5 max-w-md rounded-xl border border-primary/25 bg-background/50 px-4 py-5 text-center">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-primary">Your request code</p>
+            <p className="mt-3 break-all font-mono text-[1.65rem] font-semibold leading-none tracking-[0.14em] text-foreground sm:text-3xl">
+              {referenceId}
+            </p>
+            <button
+              type="button"
+              onClick={() => void copyCode()}
+              className="mt-4 inline-flex rounded-full border border-primary/40 px-4 py-1.5 text-xs uppercase tracking-[0.14em] text-primary transition hover:border-primary hover:bg-primary/10"
+            >
+              {copied ? "Copied" : "Copy code"}
+            </button>
+            <p className="mt-3 text-xs text-foreground/70">
+              {copied ? "Code copied to your clipboard. " : null}
+              We also emailed this to {data.email}. Tracking links below already include it — no paste
+              needed.
             </p>
           </div>
-        ) : null}
+        ) : (
+          <p className="mx-auto mt-5 max-w-md text-sm text-foreground/70">
+            Your intake was sent. Check {data.email} for your request code, or use Track status with the
+            email you submitted.
+          </p>
+        )}
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <a
-            href={priveTrack}
+            href={hubTrack}
             className="inline-flex items-center gap-2 rounded-full border border-primary bg-primary px-5 py-2 text-sm tracking-wide text-primary-foreground transition-colors hover:bg-primary/90"
             style={serif}
           >
-            Track request / create account
+            Track status now
           </a>
           <a
-            href="/track"
+            href={priveTrack}
             className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-background/60 px-5 py-2 text-sm tracking-wide text-foreground transition-colors hover:border-primary hover:bg-primary/10"
             style={serif}
           >
-            Track on Wellness Hub
+            Track / create account on Privé
           </a>
           <button
             type="button"
@@ -286,6 +329,7 @@ export function ProviderConnectForm() {
               setSubmitted(false);
               setReferenceId(null);
               setTrackUrl(null);
+              setCopied(false);
               setStep(0);
               setData(emptyIntakeForm());
               setConsentAcknowledged(false);
@@ -683,41 +727,62 @@ export function ProviderConnectForm() {
                     Handwritten signature <span className="text-destructive">*</span>
                   </p>
                   <p className="mt-1 text-xs text-foreground/70">
-                    Required on step 5 — sign below, tap Apply signature, then continue to scheduling.
+                    Required — sign in the box, then tap Apply signature before continuing.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setSignatureFullscreen(true)}
-                  className="rounded-full border border-primary bg-primary px-4 py-2 text-xs uppercase tracking-[0.14em] text-primary-foreground transition hover:bg-primary/90"
-                >
-                  Sign full screen
-                </button>
+                {!data.clientSignatureDataUrl ? (
+                  <button
+                    type="button"
+                    onClick={() => setSignatureFullscreen(true)}
+                    className="rounded-full border border-primary bg-primary px-4 py-2 text-xs uppercase tracking-[0.14em] text-primary-foreground transition hover:bg-primary/90"
+                  >
+                    Sign full screen
+                  </button>
+                ) : null}
               </div>
-              {data.clientSignatureDataUrl ? (
-                <img
-                  src={data.clientSignatureDataUrl}
-                  alt="Your signature"
-                  className="mt-4 max-h-32 rounded-md border border-primary/20 bg-white p-2"
-                />
-              ) : (
-                <p className="mt-3 rounded-md border border-dashed border-primary/30 bg-background/60 px-3 py-2 text-xs text-foreground/70">
-                  No signature yet — draw in the box below or use Sign full screen.
-                </p>
-              )}
-              <div className="mt-4">
-                <SignaturePad
-                  ref={signaturePadRef}
-                  value={data.clientSignatureDataUrl || null}
-                  onChange={(url) => setField("clientSignatureDataUrl", url ?? "")}
-                  label="Sign here"
-                  height={160}
-                />
-              </div>
+              {data.clientSignatureDataUrl && !signatureFullscreen ? (
+                <div className="mt-4 space-y-3">
+                  <img
+                    src={data.clientSignatureDataUrl}
+                    alt="Your signature"
+                    className="max-h-36 w-full rounded-md border border-primary/20 bg-white object-contain p-2"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setField("clientSignatureDataUrl", "");
+                        setSignatureFullscreen(false);
+                      }}
+                      className="rounded-full border border-primary/40 px-4 py-2 text-xs uppercase tracking-[0.14em] text-primary transition hover:bg-primary/10"
+                    >
+                      Redraw signature
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSignatureFullscreen(true)}
+                      className="rounded-full border border-primary/40 px-4 py-2 text-xs uppercase tracking-[0.14em] text-foreground/80 transition hover:bg-primary/10"
+                    >
+                      Sign full screen
+                    </button>
+                  </div>
+                </div>
+              ) : !signatureFullscreen ? (
+                <div className="mt-4">
+                  <SignaturePad
+                    ref={signaturePadRef}
+                    value={null}
+                    onChange={(url) => setField("clientSignatureDataUrl", url ?? "")}
+                    label="Sign here"
+                    height={160}
+                  />
+                </div>
+              ) : null}
             </div>
 
             {signatureFullscreen ? (
               <SignaturePad
+                ref={signaturePadRef}
                 fullScreen
                 value={data.clientSignatureDataUrl || null}
                 onChange={(url) => setField("clientSignatureDataUrl", url ?? "")}

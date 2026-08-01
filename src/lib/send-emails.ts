@@ -118,10 +118,18 @@ async function forwardToKianPrive(payload: IntakeFormData) {
     trackUrl?: string;
     hasAccount?: boolean;
   };
+
+  // Prefer patient-facing KP- code; production used to put the cuid in referenceId.
+  const requestCode =
+    (result.trackingToken && /^KP-/i.test(result.trackingToken) ? result.trackingToken : null) ||
+    (result.referenceId && /^KP-/i.test(result.referenceId) ? result.referenceId : null) ||
+    result.trackingToken ||
+    result.referenceId;
+
   return {
     forwarded: true as const,
-    referenceId: result.referenceId,
-    trackingToken: result.trackingToken,
+    referenceId: requestCode,
+    trackingToken: requestCode,
     trackUrl: result.trackUrl,
     hasAccount: result.hasAccount,
   };
@@ -142,11 +150,15 @@ export const sendProviderConnectEmail = createServerFn({ method: "POST" })
     // 2) Mirror submission into KIAN Privé Clinical Intake (DB + staff/patient email there)
     const sync = await forwardToKianPrive(payload);
 
+    const requestCode = sync.forwarded
+      ? sync.trackingToken || sync.referenceId
+      : undefined;
+
     return {
       ok: true as const,
       forwardedToKianPrive: sync.forwarded,
-      referenceId: sync.forwarded ? sync.referenceId : undefined,
-      trackingToken: sync.forwarded ? sync.trackingToken : undefined,
+      referenceId: requestCode,
+      trackingToken: requestCode,
       trackUrl: sync.forwarded ? sync.trackUrl : undefined,
       hasAccount: sync.forwarded ? sync.hasAccount : undefined,
     };
