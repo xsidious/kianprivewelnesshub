@@ -25,6 +25,9 @@ const intakeSchema = z.object({
   otherConditions: z.string().max(1000),
   recentSurgeries: z.string().max(1000),
   pregnantBreastfeeding: z.string().max(40),
+  lastPhysicalDate: z.string().max(20).optional().default(""),
+  lastBloodworkDate: z.string().max(20).optional().default(""),
+  bloodworkWithinNormalLimits: z.string().max(10).optional().default(""),
   glpMedications: z.array(z.string().max(120)).max(20),
   glpDose: z.string().max(200),
   glpDuration: z.string().max(200),
@@ -43,8 +46,8 @@ const intakeSchema = z.object({
       .min(40, "Please add your handwritten signature on the last step before submitting.")
       .max(900_000),
   ),
-  requestedDate: z.string().min(1).max(80),
-  requestedTime: z.string().min(1).max(40),
+  requestedDate: z.string().max(80).optional().default("To be scheduled"),
+  requestedTime: z.string().max(40).optional().default("TBD"),
   schedulingNotes: z.string().max(1000).optional(),
 });
 
@@ -122,7 +125,7 @@ export const sendProviderConnectEmail = createServerFn({ method: "POST" })
 
     // 1) Keep existing Resend notification from Wellness Hub
     await sendWithResend({
-      subject: `Provider Connect — ${payload.fullName} — ${payload.requestedDate} at ${payload.requestedTime}`,
+      subject: `Provider Connect — ${payload.fullName}`,
       text: formatIntakeEmailBody(payload),
       replyTo: payload.email,
     });

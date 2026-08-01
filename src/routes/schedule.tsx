@@ -8,17 +8,17 @@ const carmenPortrait = "/assets/carmen-ramirez-portrait.png";
 export const Route = createFileRoute("/schedule")({
   head: () => ({
     meta: [
-      { title: "Schedule a Consultation — KIAN Privé" },
+      { title: "Connect with a Provider — KIAN Privé" },
       {
         name: "description",
         content:
-          "Choose a date and time and complete the compounded wellness intake to connect with a KIAN Privé provider.",
+          "Complete the compounded wellness intake to connect with Dr. Carmen Ramirez. Additional providers will be listed here as they are trained.",
       },
-      { property: "og:title", content: "Schedule a Consultation — KIAN Privé" },
+      { property: "og:title", content: "Connect with a Provider — KIAN Privé" },
       {
         property: "og:description",
         content:
-          "Choose a date and time and complete the compounded wellness intake to connect with a KIAN Privé provider.",
+          "Complete the compounded wellness intake to connect with Dr. Carmen Ramirez. Additional providers will be listed here as they are trained.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -38,6 +38,10 @@ function MeetYourProvider() {
         <h2 className="mt-6 text-center text-2xl text-foreground sm:text-3xl" style={serif}>
           Meet Your Provider
         </h2>
+        <p className="mt-3 max-w-xl text-center text-sm text-foreground/75" style={serif}>
+          Start with Dr. Carmen Ramirez. As more specialists complete training, you will be able to
+          choose a provider who focuses on your specific goals.
+        </p>
       </div>
 
       <div className="mt-6 rounded-2xl border border-primary/20 bg-card/60 px-6 pb-6 pt-6 shadow-[0_10px_30px_-20px_rgba(160,130,70,0.35)] sm:px-8 sm:pb-8 sm:pt-8">
@@ -125,8 +129,8 @@ function SchedulePage() {
             className="mt-3 max-w-lg text-center text-sm leading-relaxed text-foreground/80"
             style={serif}
           >
-            Complete the compounded wellness intake first, then choose your consultation time in one secure
-            flow. Our team will confirm availability by email.
+            Complete the compounded wellness intake to connect with your provider. Our clinical team
+            will review your information and follow up by email.
           </p>
         </div>
 

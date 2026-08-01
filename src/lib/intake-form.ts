@@ -24,6 +24,9 @@ export type IntakeFormData = {
   otherConditions: string;
   recentSurgeries: string;
   pregnantBreastfeeding: string;
+  lastPhysicalDate: string;
+  lastBloodworkDate: string;
+  bloodworkWithinNormalLimits: string;
   // 04 GLP
   glpMedications: string[];
   glpDose: string;
@@ -39,7 +42,7 @@ export type IntakeFormData = {
   attestationName: string;
   attestationDate: string;
   clientSignatureDataUrl: string;
-  // Scheduling context (optional, filled from page)
+  // Optional discussion notes (no calendar booking on Carmen flow)
   requestedDate?: string;
   requestedTime?: string;
   schedulingNotes?: string;
@@ -93,7 +96,6 @@ export const PROVIDER_CONNECT_STEPS = [
   { id: 3, title: "History" },
   { id: 4, title: "GLP History" },
   { id: 5, title: "Screening & Consent" },
-  { id: 6, title: "Schedule" },
 ] as const;
 
 /** @deprecated use PROVIDER_CONNECT_STEPS */
@@ -122,6 +124,9 @@ export const emptyIntakeForm = (): IntakeFormData => ({
   otherConditions: "",
   recentSurgeries: "",
   pregnantBreastfeeding: "",
+  lastPhysicalDate: "",
+  lastBloodworkDate: "",
+  bloodworkWithinNormalLimits: "",
   glpMedications: [],
   glpDose: "",
   glpDuration: "",
@@ -136,6 +141,23 @@ export const emptyIntakeForm = (): IntakeFormData => ({
   clientSignatureDataUrl: "",
 });
 
+/** True when bloodwork is missing, not normal, or older than ~6 months. */
+export function needsFurtherLabsEvaluation(data: Pick<
+  IntakeFormData,
+  "lastBloodworkDate" | "bloodworkWithinNormalLimits"
+>) {
+  if (!data.lastBloodworkDate) return true;
+  if (data.bloodworkWithinNormalLimits === "No") return true;
+  const [yearStr, monthStr] = data.lastBloodworkDate.split("-");
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  if (!year || !month) return true;
+  const bloodworkAt = new Date(year, month - 1, 1);
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - 6);
+  return bloodworkAt < cutoff;
+}
+
 export function formatIntakeEmailBody(data: IntakeFormData): string {
   const list = (items: string[]) => (items.length ? items.join(", ") : "—");
   const line = (label: string, value: string) => `${label}: ${value?.trim() || "—"}`;
@@ -143,11 +165,6 @@ export function formatIntakeEmailBody(data: IntakeFormData): string {
   return [
     "KIAN PRIVÉ — Provider Connect + Compounded Wellness Intake",
     "==========================================================",
-    "",
-    "SCHEDULING REQUEST",
-    line("Requested date", data.requestedDate ?? ""),
-    line("Requested time", data.requestedTime ?? ""),
-    line("Discussion notes", data.schedulingNotes ?? ""),
     "",
     "01 PATIENT INFORMATION",
     line("Full Name", data.fullName),
@@ -163,6 +180,7 @@ export function formatIntakeEmailBody(data: IntakeFormData): string {
     line("Date of First Appointment", data.firstAppointmentDate),
     line("Assigned KIAN Privé Provider", data.assignedProvider),
     line("Referred by", data.referredBy),
+    line("Discussion notes", data.schedulingNotes ?? ""),
     "",
     "02 CURRENT MEDICATIONS, SUPPLEMENTS & ALLERGIES",
     line("Prescription Medications", data.prescriptionMedications),
@@ -176,6 +194,13 @@ export function formatIntakeEmailBody(data: IntakeFormData): string {
     line("Other conditions", data.otherConditions),
     line("Surgical procedures (past 12 months)", data.recentSurgeries),
     line("Pregnant / breastfeeding / planning", data.pregnantBreastfeeding),
+    line("Last physical (year/month)", data.lastPhysicalDate),
+    line("Last bloodwork (year/month)", data.lastBloodworkDate),
+    line("Bloodwork within normal limits", data.bloodworkWithinNormalLimits),
+    line(
+      "Further evaluation / labs may be required",
+      needsFurtherLabsEvaluation(data) ? "Yes — review clinically" : "No",
+    ),
     "",
     "04 GLP-1 / GLP-2 / GLP-3 & WEIGHT-LOSS HISTORY",
     line("Previous medications", list(data.glpMedications)),

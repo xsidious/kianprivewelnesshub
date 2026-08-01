@@ -1,22 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { format } from "date-fns";
 import {
-  CalendarIcon,
   Check,
   ChevronLeft,
   ChevronRight,
-  Clock,
   FileText,
   Loader2,
   Stethoscope,
 } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import {
   CONTRAINDICATIONS,
   emptyIntakeForm,
   GLP_MEDICATIONS,
   MEDICAL_CONDITIONS,
+  needsFurtherLabsEvaluation,
   PROVIDER_CONNECT_STEPS,
   type IntakeFormData,
 } from "@/lib/intake-form";
@@ -24,17 +21,6 @@ import { sendProviderConnectEmail } from "@/lib/send-emails";
 import { SignaturePad, type SignaturePadHandle } from "@/components/SignaturePad";
 
 const serif = { fontFamily: '"Cormorant Garamond", serif' } as const;
-
-const TIME_SLOTS = [
-  "9:00 AM",
-  "10:00 AM",
-  "11:00 AM",
-  "1:00 PM",
-  "2:00 PM",
-  "3:00 PM",
-  "4:00 PM",
-  "5:00 PM",
-];
 
 const inputClass =
   "min-h-11 w-full rounded-lg border border-primary/25 bg-background/60 px-4 py-2.5 text-sm text-foreground placeholder:text-foreground/40 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30";
@@ -117,12 +103,7 @@ function CheckboxGrid({
 }
 
 export function ProviderConnectForm() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
   const [step, setStep] = useState(0);
-  const [date, setDate] = useState<Date | undefined>(undefined);
-  const [time, setTime] = useState<string | undefined>(undefined);
   const [data, setData] = useState<IntakeFormData>(() => emptyIntakeForm());
   const [consentAcknowledged, setConsentAcknowledged] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -149,6 +130,11 @@ export function ProviderConnectForm() {
       if (!data.phone.trim()) return "Please enter your phone number.";
       if (!data.dateOfBirth) return "Please enter your date of birth.";
     }
+    if (index === 2) {
+      if (data.bloodworkWithinNormalLimits === "Yes" && !data.lastBloodworkDate) {
+        return "Please enter when you last had bloodwork (year/month).";
+      }
+    }
     if (index === 4) {
       if (!data.familyMtcMen2) return "Please answer the family history question.";
       if (!data.allergicReactionAny) return "Please answer the allergy question.";
@@ -165,10 +151,6 @@ export function ProviderConnectForm() {
       if (!data.clientSignatureDataUrl || data.clientSignatureDataUrl.length < 40) {
         return "Please add your handwritten signature (open full screen to sign).";
       }
-    }
-    if (index === 5) {
-      if (!date) return "Please select a consultation date.";
-      if (!time) return "Please select a time slot.";
     }
     return null;
   };
@@ -213,6 +195,8 @@ export function ProviderConnectForm() {
     const payload: IntakeFormData = {
       ...data,
       clientSignatureDataUrl: committedSignature,
+      requestedDate: "To be scheduled",
+      requestedTime: "TBD",
     };
     if (committedSignature !== data.clientSignatureDataUrl) {
       setField("clientSignatureDataUrl", committedSignature);
@@ -225,12 +209,6 @@ export function ProviderConnectForm() {
       document.getElementById("client-signature")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
-    const scheduleMsg = validateStep(5);
-    if (scheduleMsg || !date || !time) {
-      setError(scheduleMsg ?? "Please select a consultation date and time.");
-      setStep(5);
-      return;
-    }
 
     setError(null);
     setSending(true);
@@ -239,8 +217,6 @@ export function ProviderConnectForm() {
         data: {
           ...payload,
           assignedProvider: payload.assignedProvider?.trim() || "Dr. Carmen Ramirez",
-          requestedDate: format(date, "EEEE, MMMM d, yyyy"),
-          requestedTime: time,
           schedulingNotes: payload.schedulingNotes?.trim() || undefined,
         },
       });
@@ -264,19 +240,17 @@ export function ProviderConnectForm() {
           <Check className="h-6 w-6 text-primary" aria-hidden="true" />
         </div>
         <h2 className="mt-4 text-2xl text-foreground" style={serif}>
-          Request & intake sent
+          Intake sent
         </h2>
         <p className="mt-3 text-sm text-foreground/80">
-          Your consultation request and compounded wellness intake were emailed to our clinical
-          team. We will confirm availability shortly.
+          Your compounded wellness intake was emailed to our clinical team. Dr. Carmen Ramirez will
+          review your information and follow up with next steps.
         </p>
         <button
           type="button"
           onClick={() => {
             setSubmitted(false);
             setStep(0);
-            setDate(undefined);
-            setTime(undefined);
             setData(emptyIntakeForm());
             setConsentAcknowledged(false);
           }}
@@ -297,11 +271,11 @@ export function ProviderConnectForm() {
           <div className="h-px w-16 bg-primary/40" />
         </div>
         <h2 className="mt-4 text-2xl text-foreground sm:text-3xl" style={serif}>
-          Complete Intake & Book
+          Complete Your Intake
         </h2>
         <p className="mt-2 max-w-lg text-sm text-foreground/75" style={serif}>
-          Complete the compounded wellness intake first, then choose your consultation time in one
-          guided flow. Everything is sent securely to our team.
+          Complete the compounded wellness intake for clinical review. Once approved, our team will
+          guide you on next steps with your provider.
         </p>
         <a
           href="/assets/kian-prive-intake-form.pdf"
@@ -332,100 +306,6 @@ export function ProviderConnectForm() {
       </ol>
 
       <div className="mt-8 space-y-5" aria-live="polite">
-        {step === 5 && (
-          <>
-            <p className="text-center text-sm text-foreground/80" style={serif}>
-              Last step — choose your preferred consultation date and time. We will confirm availability by
-              email after you submit.
-            </p>
-            <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
-              <div className="flex flex-col items-center">
-                <div className="mb-3 flex items-center gap-2 text-sm text-foreground/80" style={serif}>
-                  <CalendarIcon className="h-4 w-4 text-primary" aria-hidden="true" />
-                  Select a date
-                </div>
-                <div className="rounded-xl border border-primary/20 bg-background/60 p-2">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={(d) => {
-                      setDate(d);
-                      setTime(undefined);
-                    }}
-                    disabled={(d) => {
-                      const day = d.getDay();
-                      return d < today || day === 0 || day === 6;
-                    }}
-                    initialFocus
-                    className={cn("pointer-events-auto")}
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center lg:items-start">
-                <div className="mb-3 flex items-center gap-2 text-sm text-foreground/80" style={serif}>
-                  <Clock className="h-4 w-4 text-primary" aria-hidden="true" />
-                  Select a time
-                </div>
-                <div
-                  role="radiogroup"
-                  aria-label="Available time slots"
-                  className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-3"
-                >
-                  {TIME_SLOTS.map((slot) => {
-                    const active = time === slot;
-                    const disabled = !date;
-                    return (
-                      <button
-                        type="button"
-                        key={slot}
-                        role="radio"
-                        aria-checked={active}
-                        disabled={disabled}
-                        onClick={() => setTime(slot)}
-                        className={cn(
-                          "min-h-11 rounded-full border px-4 py-2.5 text-xs tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                          active
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-primary/30 bg-background/60 text-foreground hover:border-primary hover:bg-primary/10",
-                          disabled &&
-                            "cursor-not-allowed opacity-50 hover:border-primary/30 hover:bg-background/60",
-                        )}
-                        style={serif}
-                      >
-                        {slot}
-                      </button>
-                    );
-                  })}
-                </div>
-                {!date && (
-                  <p className="mt-3 text-xs italic text-foreground/60">
-                    Choose a date to see available times.
-                  </p>
-                )}
-                {date && time && (
-                  <p className="mt-4 text-sm text-foreground/80" style={serif}>
-                    Requesting{" "}
-                    <span className="font-semibold text-foreground">
-                      {format(date, "EEEE, MMMM d")} at {time}
-                    </span>
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <Field id="schedulingNotes" label="What would you like to discuss? (optional)">
-              <textarea
-                id="schedulingNotes"
-                className={textareaClass}
-                value={data.schedulingNotes ?? ""}
-                onChange={(e) => setField("schedulingNotes", e.target.value.slice(0, 1000))}
-                rows={3}
-              />
-            </Field>
-          </>
-        )}
-
         {step === 0 && (
           <>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -653,6 +533,52 @@ export function ProviderConnectForm() {
                 <option value="Not applicable">Not applicable</option>
               </select>
             </Field>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field id="lastPhysicalDate" label="When was your last physical? (year / month)">
+                <input
+                  id="lastPhysicalDate"
+                  type="month"
+                  className={inputClass}
+                  value={data.lastPhysicalDate}
+                  onChange={(e) => setField("lastPhysicalDate", e.target.value)}
+                />
+              </Field>
+              <Field id="lastBloodworkDate" label="When was your last bloodwork? (year / month)">
+                <input
+                  id="lastBloodworkDate"
+                  type="month"
+                  className={inputClass}
+                  value={data.lastBloodworkDate}
+                  onChange={(e) => setField("lastBloodworkDate", e.target.value)}
+                />
+              </Field>
+            </div>
+
+            <fieldset className="space-y-3">
+              <legend className={labelClass}>Was everything within normal limits?</legend>
+              <div className="flex gap-4">
+                {(["Yes", "No"] as const).map((opt) => (
+                  <label key={opt} className="flex min-h-11 items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="bloodworkWithinNormalLimits"
+                      checked={data.bloodworkWithinNormalLimits === opt}
+                      onChange={() => setField("bloodworkWithinNormalLimits", opt)}
+                      className="accent-primary"
+                    />
+                    {opt}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            {needsFurtherLabsEvaluation(data) ? (
+              <p className="rounded-lg border border-primary/25 bg-primary/5 px-4 py-3 text-xs leading-relaxed text-foreground/80">
+                If no labs are on file, results were not within normal limits, or bloodwork is older than
+                3–6 months, further evaluation and labs may be required before treatment.
+              </p>
+            ) : null}
           </>
         )}
 
@@ -882,6 +808,16 @@ export function ProviderConnectForm() {
                 </Field>
               </div>
             </div>
+
+            <Field id="schedulingNotes" label="Anything else you would like your provider to know? (optional)">
+              <textarea
+                id="schedulingNotes"
+                className={textareaClass}
+                value={data.schedulingNotes ?? ""}
+                onChange={(e) => setField("schedulingNotes", e.target.value.slice(0, 1000))}
+                rows={3}
+              />
+            </Field>
           </>
         )}
       </div>
@@ -933,7 +869,7 @@ export function ProviderConnectForm() {
             ) : (
               <>
                 <FileText className="h-4 w-4" aria-hidden="true" />
-                Submit Request & Intake
+                Submit Intake
               </>
             )}
           </button>
