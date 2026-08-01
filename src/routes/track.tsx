@@ -5,7 +5,16 @@ import { ArrowLeft } from "lucide-react";
 const kianLogo = "/assets/kian-prive-logo.png";
 const KIAN_TRACK_API = "https://www.kianprive.com/api/intake/track";
 const KIAN_CLAIM_API = "https://www.kianprive.com/api/intake/claim-account";
+const KIAN_MESSAGES_API = "https://www.kianprive.com/api/intake/messages";
 const KIAN_LOGIN = "https://www.kianprive.com/login?callbackUrl=/dashboard/intake";
+
+type ThreadMessage = {
+  id: string;
+  authorRole: "PROVIDER" | "PATIENT" | "SYSTEM";
+  authorLabel: string;
+  body: string;
+  createdAt: string;
+};
 
 type TrackSearch = {
   ref?: string;
@@ -47,11 +56,28 @@ function TrackPage() {
     statusNote: string | null;
     hasAccount: boolean;
   } | null>(null);
+  const [messages, setMessages] = useState<ThreadMessage[]>([]);
+  const [reply, setReply] = useState("");
+  const [msgBusy, setMsgBusy] = useState(false);
+
+  async function loadMessages(nextEmail = email, nextRef = referenceId) {
+    if (!nextEmail || !nextRef) return;
+    try {
+      const res = await fetch(
+        `${KIAN_MESSAGES_API}?email=${encodeURIComponent(nextEmail)}&referenceId=${encodeURIComponent(nextRef)}`,
+      );
+      const data = await res.json();
+      if (res.ok) setMessages(data.messages ?? []);
+    } catch {
+      // non-blocking
+    }
+  }
 
   async function lookupStatus(nextEmail = email, nextRef = referenceId) {
     setBusy(true);
     setMessage("");
     setResult(null);
+    setMessages([]);
     try {
       const res = await fetch(KIAN_TRACK_API, {
         method: "POST",
@@ -69,11 +95,38 @@ function TrackPage() {
           statusNote: data.intake.statusNote,
           hasAccount: data.intake.hasAccount,
         });
+        await loadMessages(nextEmail, nextRef);
       }
     } catch {
       setMessage("Network error. Please try again.");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function sendReply(e: FormEvent) {
+    e.preventDefault();
+    if (!reply.trim() || !result) return;
+    setMsgBusy(true);
+    setMessage("");
+    try {
+      const res = await fetch(KIAN_MESSAGES_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, referenceId, body: reply.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error || "Could not send reply.");
+      } else {
+        setMessages((prev) => [...prev, data.message]);
+        setReply("");
+        setMessage("Reply sent to your clinical team.");
+      }
+    } catch {
+      setMessage("Network error. Please try again.");
+    } finally {
+      setMsgBusy(false);
     }
   }
 
@@ -257,7 +310,7 @@ function TrackPage() {
             </p>
             {result.statusNote ? (
               <p className="mt-3 rounded-lg border border-primary/20 bg-background/50 px-3 py-2 text-sm">
-                Provider note: {result.statusNote}
+                Latest clinical note: {result.statusNote}
               </p>
             ) : null}
             <a
@@ -267,6 +320,63 @@ function TrackPage() {
             >
               {result.hasAccount ? "Sign in on KIAN Privé" : "Create account / sign in on KIAN Privé"}
             </a>
+          </section>
+        ) : null}
+
+        {result ? (
+          <section className="mt-6 w-full space-y-4 rounded-2xl border border-primary/25 bg-card/70 p-5 text-left">
+            <div>
+              <h2 className="text-xl text-foreground" style={serif}>
+                Messages on this request
+              </h2>
+              <p className="mt-1 text-sm text-foreground/70">
+                Your clinical team can ask for labs or documents here. Reply on this same request.
+              </p>
+            </div>
+            <div className="max-h-72 space-y-3 overflow-y-auto rounded-xl border border-primary/15 bg-background/40 p-3">
+              {messages.length === 0 ? (
+                <p className="text-sm text-foreground/60">No messages yet.</p>
+              ) : (
+                messages.map((msg) => (
+                  <article
+                    key={msg.id}
+                    className={`rounded-lg px-3 py-2 text-sm ${
+                      msg.authorRole === "PATIENT" ? "ml-4 bg-primary/10" : "mr-4 bg-background/80"
+                    }`}
+                  >
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-primary">
+                      {msg.authorLabel}
+                      <span className="ml-2 normal-case tracking-normal text-foreground/55">
+                        {new Date(msg.createdAt).toLocaleString()}
+                      </span>
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap">{msg.body}</p>
+                  </article>
+                ))
+              )}
+            </div>
+            <form onSubmit={(e) => void sendReply(e)} className="space-y-3">
+              <label className="block text-xs uppercase tracking-[0.2em] text-foreground/70">
+                Your reply
+                <textarea
+                  value={reply}
+                  onChange={(e) => setReply(e.target.value)}
+                  rows={3}
+                  required
+                  maxLength={4000}
+                  className="mt-1.5 w-full rounded-lg border border-primary/25 bg-background/60 px-4 py-2.5 text-sm"
+                  placeholder="Type your reply for the clinical team…"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={msgBusy || !reply.trim()}
+                className="rounded-full border border-primary bg-primary px-5 py-2.5 text-sm text-primary-foreground disabled:opacity-60"
+                style={serif}
+              >
+                {msgBusy ? "Sending…" : "Send reply"}
+              </button>
+            </form>
           </section>
         ) : null}
       </div>
