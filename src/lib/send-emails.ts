@@ -111,10 +111,19 @@ async function forwardToKianPrive(payload: IntakeFormData) {
     throw new Error("Could not sync intake to KIAN Privé. Please try again or contact concierge.");
   }
 
-  const result = (await response.json()) as { ok?: boolean; referenceId?: string };
+  const result = (await response.json()) as {
+    ok?: boolean;
+    referenceId?: string;
+    trackingToken?: string;
+    trackUrl?: string;
+    hasAccount?: boolean;
+  };
   return {
     forwarded: true as const,
     referenceId: result.referenceId,
+    trackingToken: result.trackingToken,
+    trackUrl: result.trackUrl,
+    hasAccount: result.hasAccount,
   };
 }
 
@@ -137,6 +146,9 @@ export const sendProviderConnectEmail = createServerFn({ method: "POST" })
       ok: true as const,
       forwardedToKianPrive: sync.forwarded,
       referenceId: sync.forwarded ? sync.referenceId : undefined,
+      trackingToken: sync.forwarded ? sync.trackingToken : undefined,
+      trackUrl: sync.forwarded ? sync.trackUrl : undefined,
+      hasAccount: sync.forwarded ? sync.hasAccount : undefined,
     };
   });
 

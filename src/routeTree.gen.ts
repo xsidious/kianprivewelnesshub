@@ -14,6 +14,7 @@ import { Route as ConsultationRouteImport } from './routes/consultation'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as JenniferFennerRouteImport } from './routes/jennifer-fenner'
 import { Route as ScheduleRouteImport } from './routes/schedule'
+import { Route as TrackRouteImport } from './routes/track'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +41,11 @@ const ScheduleRoute = ScheduleRouteImport.update({
   path: '/schedule',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TrackRoute = TrackRouteImport.update({
+  id: '/track',
+  path: '/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/faq': typeof FaqRoute
   '/jennifer-fenner': typeof JenniferFennerRoute
   '/schedule': typeof ScheduleRoute
+  '/track': typeof TrackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/faq': typeof FaqRoute
   '/jennifer-fenner': typeof JenniferFennerRoute
   '/schedule': typeof ScheduleRoute
+  '/track': typeof TrackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,12 +70,15 @@ export interface FileRoutesById {
   '/faq': typeof FaqRoute
   '/jennifer-fenner': typeof JenniferFennerRoute
   '/schedule': typeof ScheduleRoute
+  '/track': typeof TrackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/consultation' | '/faq' | '/jennifer-fenner' | '/schedule'
+  fullPaths:
+    '/' | '/consultation' | '/faq' | '/jennifer-fenner' | '/schedule' | '/track'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/consultation' | '/faq' | '/jennifer-fenner' | '/schedule'
+  to:
+    '/' | '/consultation' | '/faq' | '/jennifer-fenner' | '/schedule' | '/track'
   id:
     | '__root__'
     | '/'
@@ -75,6 +86,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/jennifer-fenner'
     | '/schedule'
+    | '/track'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -83,6 +95,7 @@ export interface RootRouteChildren {
   FaqRoute: typeof FaqRoute
   JenniferFennerRoute: typeof JenniferFennerRoute
   ScheduleRoute: typeof ScheduleRoute
+  TrackRoute: typeof TrackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -122,6 +135,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScheduleRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/track': {
+      id: '/track'
+      path: '/track'
+      fullPath: '/track'
+      preLoaderRoute: typeof TrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -131,6 +151,7 @@ const rootRouteChildren: RootRouteChildren = {
   FaqRoute: FaqRoute,
   JenniferFennerRoute: JenniferFennerRoute,
   ScheduleRoute: ScheduleRoute,
+  TrackRoute: TrackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

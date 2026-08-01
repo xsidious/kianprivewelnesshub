@@ -109,6 +109,8 @@ export function ProviderConnectForm() {
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [referenceId, setReferenceId] = useState<string | null>(null);
+  const [trackUrl, setTrackUrl] = useState<string | null>(null);
   const [signatureFullscreen, setSignatureFullscreen] = useState(false);
   const signaturePadRef = useRef<SignaturePadHandle | null>(null);
 
@@ -213,13 +215,15 @@ export function ProviderConnectForm() {
     setError(null);
     setSending(true);
     try {
-      await sendProviderConnectEmail({
+      const result = await sendProviderConnectEmail({
         data: {
           ...payload,
           assignedProvider: payload.assignedProvider?.trim() || "Dr. Carmen Ramirez",
           schedulingNotes: payload.schedulingNotes?.trim() || undefined,
         },
       });
+      setReferenceId(result.referenceId ?? null);
+      setTrackUrl(result.trackUrl ?? null);
       setSubmitted(true);
     } catch (err) {
       console.error(err);
@@ -231,6 +235,12 @@ export function ProviderConnectForm() {
   };
 
   if (submitted) {
+    const priveTrack =
+      trackUrl ||
+      (referenceId
+        ? `https://www.kianprive.com/track-intake?ref=${encodeURIComponent(referenceId)}&email=${encodeURIComponent(data.email)}`
+        : "https://www.kianprive.com/track-intake");
+
     return (
       <section
         className="mt-12 w-full rounded-2xl border border-primary/30 bg-card/60 p-8 text-center shadow-[0_10px_30px_-20px_rgba(160,130,70,0.35)]"
@@ -246,19 +256,46 @@ export function ProviderConnectForm() {
           Your compounded wellness intake was emailed to our clinical team. Dr. Carmen Ramirez will
           review your information and follow up with next steps.
         </p>
-        <button
-          type="button"
-          onClick={() => {
-            setSubmitted(false);
-            setStep(0);
-            setData(emptyIntakeForm());
-            setConsentAcknowledged(false);
-          }}
-          className="mt-6 inline-flex items-center gap-2 rounded-full border border-primary/40 bg-background/60 px-5 py-2 text-sm tracking-wide text-foreground transition-colors hover:border-primary hover:bg-primary/10"
-          style={serif}
-        >
-          Submit another request
-        </button>
+        {referenceId ? (
+          <div className="mx-auto mt-5 max-w-md rounded-xl border border-primary/25 bg-background/50 px-4 py-3 text-left">
+            <p className="text-[10px] uppercase tracking-[0.18em] text-primary">Your reference ID</p>
+            <p className="mt-1 break-all font-mono text-sm text-foreground">{referenceId}</p>
+            <p className="mt-2 text-xs text-foreground/70">
+              Save this ID — it was also emailed to {data.email}. Use it anytime to check status.
+            </p>
+          </div>
+        ) : null}
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <a
+            href={priveTrack}
+            className="inline-flex items-center gap-2 rounded-full border border-primary bg-primary px-5 py-2 text-sm tracking-wide text-primary-foreground transition-colors hover:bg-primary/90"
+            style={serif}
+          >
+            Track request / create account
+          </a>
+          <a
+            href="/track"
+            className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-background/60 px-5 py-2 text-sm tracking-wide text-foreground transition-colors hover:border-primary hover:bg-primary/10"
+            style={serif}
+          >
+            Track on Wellness Hub
+          </a>
+          <button
+            type="button"
+            onClick={() => {
+              setSubmitted(false);
+              setReferenceId(null);
+              setTrackUrl(null);
+              setStep(0);
+              setData(emptyIntakeForm());
+              setConsentAcknowledged(false);
+            }}
+            className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-background/60 px-5 py-2 text-sm tracking-wide text-foreground transition-colors hover:border-primary hover:bg-primary/10"
+            style={serif}
+          >
+            Submit another request
+          </button>
+        </div>
       </section>
     );
   }
