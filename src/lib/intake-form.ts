@@ -66,9 +66,9 @@ export const MEDICAL_CONDITIONS = [
 ] as const;
 
 export const GLP_MEDICATIONS = [
-  "Semaglutide (Ozempic/Wegovy)",
-  "Tirzepatide (Mounjaro/Zepbound)",
-  "Retatrutide",
+  "GLP 1",
+  "GLP 2",
+  "GLP 3",
   "Liraglutide (Saxenda/Victoza)",
   "Dulaglutide (Trulicity)",
   "Exenatide (Byetta/Bydureon)",

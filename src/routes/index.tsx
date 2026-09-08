@@ -133,13 +133,13 @@ type Group = { title: string; image: string; items: Entry[] };
 
 const GLOSSARY: Group[] = [
   {
-    title: "GLP-1 & Metabolic",
+    title: "Weight Loss and Metabolic",
     image: catGlp1,
     items: [
-      { name: "Semaglutide", desc: "GLP-1 receptor agonist used for appetite regulation, glycemic control, and sustained weight reduction." },
-      { name: "Tirzepatide", desc: "Dual GIP/GLP-1 agonist offering enhanced metabolic and weight-loss effects versus GLP-1 alone." },
-      { name: "Retatrutide (R3-40)", desc: "Investigational triple agonist (GIP/GLP-1/glucagon) targeting significant fat loss and metabolic remodeling." },
-      { name: "Cagrilintide", desc: "Long-acting amylin analogue that enhances satiety and complements GLP-1 therapy." },
+      { name: "GLP 1", desc: "Receptor agonist used for appetite regulation, glycemic control, and sustained weight reduction." },
+      { name: "GLP 2", desc: "Dual agonist offering enhanced metabolic and weight-loss effects versus single-pathway therapy alone." },
+      { name: "GLP 3", desc: "Investigational triple agonist targeting significant fat loss and metabolic remodeling." },
+      { name: "Cagrilintide", desc: "Long-acting amylin analogue that enhances satiety and complements metabolic therapy." },
       { name: "Tesofensine", desc: "Monoamine reuptake inhibitor studied for appetite suppression and weight loss." },
       { name: "SLU-PP-332", desc: "ERR agonist that mimics exercise-like metabolic effects, supporting endurance and fat oxidation." },
       { name: "BAM15", desc: "Mitochondrial uncoupler that increases energy expenditure without stimulant effects." },
