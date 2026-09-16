@@ -42,6 +42,12 @@ export type IntakeFormData = {
   attestationName: string;
   attestationDate: string;
   clientSignatureDataUrl: string;
+  // 08 Photo / video / testimonial HIPAA media authorization
+  photoVideoConsentAccepted: boolean;
+  photoVideoConsentSignedAt: string;
+  photoVideoConsentPrintedName: string;
+  photoVideoGuardianName: string;
+  photoVideoGuardianRelationship: string;
   // Optional discussion notes (no calendar booking on Carmen flow)
   requestedDate?: string;
   requestedTime?: string;
@@ -139,6 +145,11 @@ export const emptyIntakeForm = (): IntakeFormData => ({
   attestationName: "",
   attestationDate: new Date().toISOString().slice(0, 10),
   clientSignatureDataUrl: "",
+  photoVideoConsentAccepted: false,
+  photoVideoConsentSignedAt: new Date().toISOString().slice(0, 10),
+  photoVideoConsentPrintedName: "",
+  photoVideoGuardianName: "",
+  photoVideoGuardianRelationship: "",
 });
 
 /** True when bloodwork is missing, not normal, or older than ~6 months. */
@@ -219,6 +230,13 @@ export function formatIntakeEmailBody(data: IntakeFormData): string {
     line("Printed Name", data.attestationName),
     line("Date", data.attestationDate),
     line("Handwritten signature", data.clientSignatureDataUrl ? "Captured" : "Missing"),
+    "",
+    "08 PHOTO / VIDEO / TESTIMONIAL HIPAA AUTHORIZATION",
+    line("Media consent accepted", data.photoVideoConsentAccepted ? "YES" : "NO"),
+    line("Printed name", data.photoVideoConsentPrintedName),
+    line("Date signed", data.photoVideoConsentSignedAt),
+    line("Guardian name", data.photoVideoGuardianName),
+    line("Guardian relationship", data.photoVideoGuardianRelationship),
     "",
     "— Submitted via KIAN Privé Connect with Provider page",
     "This information is confidential and protected under HIPAA guidelines.",

@@ -46,6 +46,13 @@ const intakeSchema = z.object({
       .min(40, "Please add your handwritten signature on the last step before submitting.")
       .max(900_000),
   ),
+  photoVideoConsentAccepted: z.boolean().refine((value) => value === true, {
+    message: "Photo/video HIPAA media authorization is required.",
+  }),
+  photoVideoConsentSignedAt: z.string().min(1).max(40),
+  photoVideoConsentPrintedName: z.string().trim().min(2).max(120),
+  photoVideoGuardianName: z.string().max(120).optional().default(""),
+  photoVideoGuardianRelationship: z.string().max(120).optional().default(""),
   requestedDate: z.string().max(80).optional().default("To be scheduled"),
   requestedTime: z.string().max(40).optional().default("TBD"),
   schedulingNotes: z.string().max(1000).optional(),
@@ -85,7 +92,14 @@ async function sendWithResend(options: {
   }
 }
 
-async function forwardToKianPrive(payload: IntakeFormData) {
+async function forwardToKianPrive(
+  payload: IntakeFormData,
+  payment: {
+    opaqueData: { dataDescriptor: string; dataValue: string };
+    billTo?: { zip?: string; firstName?: string; lastName?: string };
+    testCardNumber?: string;
+  },
+) {
   const baseUrl = (process.env.KIAN_PRIVE_API_URL || "https://www.kianprive.com").replace(/\/$/, "");
   const secret = process.env.KIAN_PRIVE_INTAKE_SECRET?.trim();
 
@@ -102,13 +116,25 @@ async function forwardToKianPrive(payload: IntakeFormData) {
       "Content-Type": "application/json",
       "x-wellness-hub-secret": secret,
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      intake: payload,
+      opaqueData: payment.opaqueData,
+      billTo: payment.billTo,
+      testCardNumber: payment.testCardNumber,
+    }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
     console.error("[wellness-hub] KIAN Privé intake forward failed:", response.status, errorText);
-    throw new Error("Could not sync intake to KIAN Privé. Please try again or contact concierge.");
+    let message = "The $75 provider review deposit could not be processed. Please check the card and try again.";
+    try {
+      const parsed = JSON.parse(errorText) as { error?: string };
+      if (parsed.error) message = parsed.error;
+    } catch {
+      // keep the default message
+    }
+    throw new Error(message);
   }
 
   const result = (await response.json()) as {
@@ -135,20 +161,43 @@ async function forwardToKianPrive(payload: IntakeFormData) {
   };
 }
 
-export const sendProviderConnectEmail = createServerFn({ method: "POST" })
-  .validator(intakeSchema)
-  .handler(async ({ data }) => {
-    const payload = data as IntakeFormData;
+const submitSchema = z.object({
+  intake: intakeSchema,
+  opaqueData: z.object({
+    dataDescriptor: z.string().min(1),
+    dataValue: z.string().min(1),
+  }),
+  billTo: z
+    .object({
+      zip: z.string().optional(),
+      firstName: z.string().optional(),
+      lastName: z.string().optional(),
+    })
+    .optional(),
+  testCardNumber: z.string().optional(),
+});
 
-    // 1) Keep existing Resend notification from Wellness Hub
-    await sendWithResend({
-      subject: `Provider Connect — ${payload.fullName}`,
-      text: formatIntakeEmailBody(payload),
-      replyTo: payload.email,
+export const sendProviderConnectEmail = createServerFn({ method: "POST" })
+  .validator(submitSchema)
+  .handler(async ({ data }) => {
+    const payload = data.intake as IntakeFormData;
+
+    if (!process.env.KIAN_PRIVE_INTAKE_SECRET?.trim()) {
+      throw new Error("Provider review deposit cannot be processed right now. Please contact concierge.");
+    }
+
+    // Charge the $75 deposit and store the chart before anyone is emailed.
+    const sync = await forwardToKianPrive(payload, {
+      opaqueData: data.opaqueData,
+      billTo: data.billTo,
+      testCardNumber: data.testCardNumber,
     });
 
-    // 2) Mirror submission into KIAN Privé Clinical Intake (DB + staff/patient email there)
-    const sync = await forwardToKianPrive(payload);
+    await sendWithResend({
+      subject: `Provider Connect — ${payload.fullName} ($75 review deposit paid)`,
+      text: `${formatIntakeEmailBody(payload)}\n\nProvider review deposit: $75 paid. Chart is in Wellness Tech for physician review.`,
+      replyTo: payload.email,
+    });
 
     const requestCode = sync.forwarded
       ? sync.trackingToken || sync.referenceId

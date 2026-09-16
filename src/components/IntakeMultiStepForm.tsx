@@ -3,8 +3,6 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
-  FileText,
-  Loader2,
   Stethoscope,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,7 +15,13 @@ import {
   PROVIDER_CONNECT_STEPS,
   type IntakeFormData,
 } from "@/lib/intake-form";
+import {
+  PHOTO_VIDEO_CONSENT_ACK,
+  PHOTO_VIDEO_CONSENT_PARAGRAPHS,
+  PHOTO_VIDEO_CONSENT_TITLE,
+} from "@/lib/photo-video-consent";
 import { sendProviderConnectEmail } from "@/lib/send-emails";
+import { ReviewDepositPay } from "@/components/ReviewDepositPay";
 import { SignaturePad, type SignaturePadHandle } from "@/components/SignaturePad";
 
 const serif = { fontFamily: '"Cormorant Garamond", serif' } as const;
@@ -158,6 +162,15 @@ export function ProviderConnectForm() {
       if (!consentAcknowledged) {
         return "Please acknowledge the disclaimer and informed consent.";
       }
+      if (!data.photoVideoConsentAccepted) {
+        return "Please accept the Photo, Video, Testimonial, HIPAA Authorization Consent and Release.";
+      }
+      if (data.photoVideoConsentPrintedName.trim().length < 2) {
+        return "Please print your name on the photo/video consent.";
+      }
+      if (!data.photoVideoConsentSignedAt) {
+        return "Please date the photo/video consent.";
+      }
       if (data.attestationName.trim().length < 2) {
         return "Please type your full name as your printed signature.";
       }
@@ -178,6 +191,9 @@ export function ProviderConnectForm() {
     setError(null);
     if (step === 0 && !data.attestationName.trim()) {
       setField("attestationName", data.fullName);
+    }
+    if (step === 0 && !data.photoVideoConsentPrintedName.trim()) {
+      setField("photoVideoConsentPrintedName", data.fullName);
     }
     setStep((s) => Math.min(s + 1, PROVIDER_CONNECT_STEPS.length - 1));
   };
@@ -203,7 +219,11 @@ export function ProviderConnectForm() {
     return raw || "Unable to send your request. Please try again.";
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (payment?: {
+    opaqueData: { dataDescriptor: string; dataValue: string };
+    billTo?: { zip?: string };
+    testCardNumber?: string;
+  }) => {
     const committedSignature =
       signaturePadRef.current?.commit() ?? data.clientSignatureDataUrl ?? "";
     const payload: IntakeFormData = {
@@ -218,10 +238,17 @@ export function ProviderConnectForm() {
 
     const consentMsg = validateStep(4);
     if (consentMsg || !payload.clientSignatureDataUrl || payload.clientSignatureDataUrl.length < 40) {
-      setError(consentMsg ?? "Please add your handwritten signature, then tap Apply signature.");
+      const message = consentMsg ?? "Please add your handwritten signature, then tap Apply signature.";
+      setError(message);
       setStep(4);
       document.getElementById("client-signature")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      return;
+      throw new Error(message);
+    }
+
+    if (!payment?.opaqueData?.dataValue) {
+      const message = "Pay the $75 provider review deposit to send this intake to the physician.";
+      setError(message);
+      throw new Error(message);
     }
 
     setError(null);
@@ -229,9 +256,14 @@ export function ProviderConnectForm() {
     try {
       const result = await sendProviderConnectEmail({
         data: {
-          ...payload,
-          assignedProvider: payload.assignedProvider?.trim() || "Dr. Carmen Ramirez",
-          schedulingNotes: payload.schedulingNotes?.trim() || undefined,
+          intake: {
+            ...payload,
+            assignedProvider: payload.assignedProvider?.trim() || "Dr. Carmen Ramirez",
+            schedulingNotes: payload.schedulingNotes?.trim() || undefined,
+          },
+          opaqueData: payment.opaqueData,
+          billTo: payment.billTo,
+          testCardNumber: payment.testCardNumber,
         },
       });
       const code = (result.trackingToken || result.referenceId || "").trim().toUpperCase() || null;
@@ -280,7 +312,7 @@ export function ProviderConnectForm() {
           Intake sent
         </h2>
         <p className="mt-3 text-sm text-foreground/80">
-          Your compounded wellness intake was emailed to our clinical team. Dr. Carmen Ramirez will
+          Your $75 provider review deposit was received and your intake was sent to the assigned physician. They will
           review your information and follow up with next steps.
         </p>
         {referenceId ? (
@@ -355,7 +387,8 @@ export function ProviderConnectForm() {
           Complete Your Intake
         </h2>
         <p className="mt-2 max-w-lg text-sm text-foreground/75" style={serif}>
-          Complete the compounded wellness intake for clinical review. Once approved, our team will
+          Complete the compounded wellness intake for clinical review. A $75 deposit is collected on the last step
+          before the chart is sent to the physician. Once approved, our team will
           guide you on next steps with your provider.
         </p>
         <a
@@ -889,6 +922,64 @@ export function ProviderConnectForm() {
                 </span>
               </label>
 
+              <div className="mt-5 rounded-xl border border-primary/25 bg-background/50 p-4 sm:p-5">
+                <p className="text-sm font-medium text-foreground">{PHOTO_VIDEO_CONSENT_TITLE}</p>
+                <p className="mt-1 text-xs text-foreground/70">
+                  Required for physician, nursing, and clinical medical records.
+                </p>
+                <div className="mt-3 max-h-48 space-y-2 overflow-y-auto rounded-md border border-primary/15 bg-background/70 p-3 text-xs leading-relaxed text-foreground/80">
+                  {PHOTO_VIDEO_CONSENT_PARAGRAPHS.map((paragraph) => (
+                    <p key={paragraph.slice(0, 40)}>{paragraph}</p>
+                  ))}
+                </div>
+                <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-md border border-primary/25 bg-background/60 px-3 py-2.5 text-sm text-foreground/85">
+                  <input
+                    type="checkbox"
+                    checked={data.photoVideoConsentAccepted}
+                    onChange={(e) => setField("photoVideoConsentAccepted", e.target.checked)}
+                    className="mt-1 h-4 w-4 accent-primary"
+                  />
+                  <span>{PHOTO_VIDEO_CONSENT_ACK} *</span>
+                </label>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <Field id="photoVideoConsentPrintedName" label="Printed name (media consent)">
+                    <input
+                      id="photoVideoConsentPrintedName"
+                      className={inputClass}
+                      value={data.photoVideoConsentPrintedName}
+                      onChange={(e) => setField("photoVideoConsentPrintedName", e.target.value.slice(0, 120))}
+                    />
+                  </Field>
+                  <Field id="photoVideoConsentSignedAt" label="Date signed (media consent)">
+                    <input
+                      id="photoVideoConsentSignedAt"
+                      type="date"
+                      className={inputClass}
+                      value={data.photoVideoConsentSignedAt}
+                      onChange={(e) => setField("photoVideoConsentSignedAt", e.target.value)}
+                    />
+                  </Field>
+                  <Field id="photoVideoGuardianName" label="Parent / guardian (if under 18)">
+                    <input
+                      id="photoVideoGuardianName"
+                      className={inputClass}
+                      value={data.photoVideoGuardianName}
+                      onChange={(e) => setField("photoVideoGuardianName", e.target.value.slice(0, 120))}
+                    />
+                  </Field>
+                  <Field id="photoVideoGuardianRelationship" label="Relationship to minor">
+                    <input
+                      id="photoVideoGuardianRelationship"
+                      className={inputClass}
+                      value={data.photoVideoGuardianRelationship}
+                      onChange={(e) =>
+                        setField("photoVideoGuardianRelationship", e.target.value.slice(0, 120))
+                      }
+                    />
+                  </Field>
+                </div>
+              </div>
+
               <div className="mt-4 grid gap-4 sm:grid-cols-2">
                 <Field id="attestationName" label="Printed full name">
                   <input
@@ -920,6 +1011,13 @@ export function ProviderConnectForm() {
                 rows={3}
               />
             </Field>
+
+            <ReviewDepositPay
+              busy={sending}
+              onPay={async (payment) => {
+                await handleSubmit(payment);
+              }}
+            />
           </>
         )}
       </div>
@@ -956,25 +1054,9 @@ export function ProviderConnectForm() {
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </button>
         ) : (
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={sending}
-            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-primary bg-primary px-5 py-2.5 text-sm tracking-wide text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
-            style={serif}
-          >
-            {sending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                Sending…
-              </>
-            ) : (
-              <>
-                <FileText className="h-4 w-4" aria-hidden="true" />
-                Submit Intake
-              </>
-            )}
-          </button>
+          <p className="max-w-sm text-sm text-foreground/70">
+            Pay the $75 deposit above. The intake is not sent to the physician until that payment succeeds.
+          </p>
         )}
       </div>
     </section>
