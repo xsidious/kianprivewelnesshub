@@ -2,8 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Sparkles } from "lucide-react";
 
 const kianLogo = "/assets/kian-prive-logo.png";
-const jenniferPortrait = "/assets/jennifer-fenner-portrait.png";
-const shanePortrait = "/assets/shane-shuckerow-portrait.png";
 
 export const Route = createFileRoute("/jennifer-fenner")({
   head: () => ({
@@ -70,31 +68,21 @@ function JenniferFenner() {
           </p>
         </div>
 
-        <section className="mt-12 w-full rounded-2xl border border-primary/20 bg-card/60 px-6 pb-6 pt-2 shadow-[0_10px_30px_-20px_rgba(160,130,70,0.35)] sm:px-8 sm:pb-8 sm:pt-3">
-          <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
-            <div className="flex flex-shrink-0 flex-col items-center md:items-start">
-              <img
-                src={jenniferPortrait}
-                alt="Jennifer Fenner, Certified Peptide Consultant"
-                width={280}
-                height={420}
-                loading="lazy"
-                className="h-auto w-48 max-w-[220px] object-contain drop-shadow-[0_12px_24px_rgba(42,38,32,0.15)] sm:w-56 md:max-w-[260px]"
-              />
-              <div className="mt-4 text-center md:text-left">
-                <h2
-                  className="text-xl text-foreground sm:text-2xl"
-                  style={{ fontFamily: '"Cormorant Garamond", serif' }}
-                >
-                  Jennifer Fenner
-                </h2>
-                <p className="mt-1 text-sm italic text-foreground/75">
-                  Certified Peptide Consultant, KIAN Privé
-                </p>
-              </div>
+        <section className="mt-12 w-full rounded-2xl border border-primary/20 bg-card/60 px-6 py-6 shadow-[0_10px_30px_-20px_rgba(160,130,70,0.35)] sm:px-8 sm:py-8">
+          <div className="flex flex-col gap-4">
+            <div>
+              <h2
+                className="text-xl text-foreground sm:text-2xl"
+                style={{ fontFamily: '"Cormorant Garamond", serif' }}
+              >
+                Jennifer Fenner
+              </h2>
+              <p className="mt-1 text-sm italic text-foreground/75">
+                Certified Peptide Consultant, KIAN Privé
+              </p>
             </div>
 
-            <div className="flex-1">
+            <div>
               <p className="text-sm leading-relaxed text-foreground/85">
                 Jennifer Fenner is a Certified Peptide Consultant with KIAN Privé and a graduate of Dr. William Seeds' peptide education program. She is passionate about bridging the gap between cutting-edge peptide therapies and evidence-informed wellness through education, personalized guidance, and a whole-person approach to health.
               </p>
@@ -108,31 +96,21 @@ function JenniferFenner() {
           </div>
         </section>
 
-        <section className="mt-8 w-full rounded-2xl border border-primary/20 bg-card/60 px-6 pb-6 pt-2 shadow-[0_10px_30px_-20px_rgba(160,130,70,0.35)] sm:px-8 sm:pb-8 sm:pt-3">
-          <div className="flex flex-col items-center gap-6 md:flex-row md:items-start md:gap-8">
-            <div className="flex flex-shrink-0 flex-col items-center md:items-start">
-              <img
-                src={shanePortrait}
-                alt="Shane Shuckerow, Health, Wellness & Fitness Expert"
-                width={280}
-                height={420}
-                loading="lazy"
-                className="h-auto w-48 max-w-[220px] object-contain drop-shadow-[0_12px_24px_rgba(42,38,32,0.15)] sm:w-56 md:max-w-[260px]"
-              />
-              <div className="mt-4 text-center md:text-left">
-                <h2
-                  className="text-xl text-foreground sm:text-2xl"
-                  style={{ fontFamily: '"Cormorant Garamond", serif' }}
-                >
-                  Shane Shuckerow
-                </h2>
-                <p className="mt-1 text-sm italic text-foreground/75">
-                  Health, Wellness & Fitness Expert
-                </p>
-              </div>
+        <section className="mt-8 w-full rounded-2xl border border-primary/20 bg-card/60 px-6 py-6 shadow-[0_10px_30px_-20px_rgba(160,130,70,0.35)] sm:px-8 sm:py-8">
+          <div className="flex flex-col gap-4">
+            <div>
+              <h2
+                className="text-xl text-foreground sm:text-2xl"
+                style={{ fontFamily: '"Cormorant Garamond", serif' }}
+              >
+                Shane Shuckerow
+              </h2>
+              <p className="mt-1 text-sm italic text-foreground/75">
+                Health, Wellness & Fitness Expert
+              </p>
             </div>
 
-            <div className="flex-1">
+            <div>
               <p className="text-sm leading-relaxed text-foreground/85">
                 Shane Shuckerow is a seasoned fitness and wellness professional who brings a rare blend of scientific rigor and real-world coaching experience to every client relationship. He built his foundation in exercise physiology and personal training under the mentorship of Dr. Anthony Abbott, Founder and President of Fitness Institute International, developing deep expertise in human performance, metabolic health, and individualized program design.
               </p>

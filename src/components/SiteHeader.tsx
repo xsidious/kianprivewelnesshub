@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router";
+
 const KIAN_HOME = "https://www.kianprive.com";
 const KIAN_SHOP = "https://www.kianprive.com/shop";
 
@@ -16,6 +18,12 @@ export function SiteHeader() {
           KIAN Privé
         </a>
         <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/resources"
+            className="inline-flex rounded-full border border-primary/35 px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] text-foreground/85 transition hover:border-primary hover:bg-primary/10"
+          >
+            Resources
+          </Link>
           <a
             href={KIAN_HOME}
             className="inline-flex rounded-full border border-primary/35 px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] text-foreground/85 transition hover:border-primary hover:bg-primary/10"

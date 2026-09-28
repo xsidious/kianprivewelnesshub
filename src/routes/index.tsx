@@ -415,6 +415,13 @@ function WellnessJourney() {
             Explore the Wellness Compounding Guide
           </a>
           <Link
+            to="/resources"
+            className="inline-flex h-16 w-full items-center justify-center rounded-full border border-primary/40 bg-background/60 px-6 py-2.5 text-center text-sm leading-tight tracking-wide text-foreground transition-colors hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-[calc(50%-0.375rem)] lg:w-[calc(33.333%-0.5rem)]"
+            style={{ fontFamily: '"Cormorant Garamond", serif' }}
+          >
+            Resources
+          </Link>
+          <Link
             to="/faq"
             className="inline-flex h-16 w-full items-center justify-center rounded-full border border-primary/40 bg-background/60 px-6 py-2.5 text-center text-sm leading-tight tracking-wide text-foreground transition-colors hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-[calc(50%-0.375rem)] lg:w-[calc(33.333%-0.5rem)]"
             style={{ fontFamily: '"Cormorant Garamond", serif' }}
