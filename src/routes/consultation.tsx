@@ -48,23 +48,6 @@ const WELLNESS_GOALS = [
   "Heart and metabolic health",
 ];
 
-const CONCERNS = [
-  "Stubborn weight",
-  "Low energy",
-  "Brain fog",
-  "Poor recovery",
-  "Joint discomfort",
-  "Digestive issues",
-  "Difficulty building muscle",
-  "Poor sleep",
-  "Low libido",
-  "Skin aging",
-  "Hair thinning",
-  "Mood",
-  "Blood sugar concerns",
-  "Inflammation",
-];
-
 const inputClass =
   "w-full rounded-lg border border-primary/25 bg-background/60 px-4 py-2.5 text-sm text-foreground placeholder:text-foreground/40 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30";
 
@@ -111,22 +94,6 @@ function CheckboxGrid({
           Select up to {max}.
         </p>
       ) : null}
-    </div>
-  );
-}
-
-function RadioRow({ name, options }: { name: string; options: readonly string[] }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {options.map((opt) => (
-        <label
-          key={opt}
-          className="flex cursor-pointer items-center gap-2 rounded-full border border-primary/25 px-4 py-1.5 text-sm text-foreground/85 transition-colors hover:border-primary hover:bg-primary/10 has-[:checked]:border-primary has-[:checked]:bg-primary/15"
-        >
-          <input type="radio" name={name} value={opt} className="h-3.5 w-3.5 accent-primary" />
-          {opt}
-        </label>
-      ))}
     </div>
   );
 }
@@ -186,12 +153,6 @@ function ConsultationPage() {
           >
             Wellness Goals Questionnaire
           </h1>
-          <p
-            className="mt-3 max-w-xl text-center text-sm leading-relaxed text-foreground/80"
-            style={serif}
-          >
-            Share your goals so Jennifer can personalize your consultation.
-          </p>
         </div>
 
         {submitted ? (
@@ -260,84 +221,18 @@ function ConsultationPage() {
               </div>
             </Section>
 
-            <Section title="Current Health">
-              <div>
-                <span className={labelClass}>Diagnosed medical conditions?</span>
-                <RadioRow name="hasConditions" options={["No", "Yes"]} />
-                <input
-                  name="conditionsList"
-                  placeholder="If yes, please list"
-                  className={`${inputClass} mt-3`}
-                />
-              </div>
-              <div>
-                <span className={labelClass}>Currently taking prescription medications?</span>
-                <RadioRow name="hasMedications" options={["No", "Yes"]} />
-                <input
-                  name="medicationsList"
-                  placeholder="If yes, please list"
-                  className={`${inputClass} mt-3`}
-                />
-              </div>
-              <div>
-                <span className={labelClass}>Ever used GLP-1 medications or peptide therapies?</span>
-                <RadioRow name="hasPeptideHistory" options={["No", "Yes"]} />
-                <input
-                  name="peptideHistoryList"
-                  placeholder="If yes, please list"
-                  className={`${inputClass} mt-3`}
-                />
-              </div>
-              <div>
-                <span className={labelClass}>Medication allergies?</span>
-                <RadioRow name="hasAllergies" options={["No", "Yes"]} />
-                <input
-                  name="allergiesList"
-                  placeholder="If yes, please list"
-                  className={`${inputClass} mt-3`}
-                />
-              </div>
-            </Section>
-
-            <Section title="Lifestyle">
-              <div>
-                <span className={labelClass}>Stress level</span>
-                <RadioRow name="stress" options={["Low", "Moderate", "High"]} />
-              </div>
-              <div>
-                <span className={labelClass}>Average hours of sleep per night</span>
-                <RadioRow name="sleep" options={["Less than 5", "5–6", "7–8", "More than 8"]} />
-              </div>
-              <div>
-                <span className={labelClass}>Exercise frequency</span>
-                <RadioRow
-                  name="exercise"
-                  options={["Rarely", "1–2 days/week", "3–4 days/week", "5+ days/week"]}
-                />
-              </div>
-              <div>
-                <span className={labelClass}>Nutrition</span>
-                <RadioRow
-                  name="nutrition"
-                  options={["Excellent", "Good", "Fair", "Needs improvement"]}
-                />
-              </div>
-            </Section>
-
-            <Section title="Areas of Concern">
-              <p className="text-sm text-foreground/75">Check up to five.</p>
-              <CheckboxGrid name="concerns" options={CONCERNS} max={5} />
-              <div>
-                <label className={labelClass} htmlFor="concernsOther">Other</label>
-                <input id="concernsOther" name="concernsOther" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass} htmlFor="additional">
-                  Is there anything else you'd like us to know?
-                </label>
-                <textarea id="additional" name="additional" rows={4} className={inputClass} />
-              </div>
-            </Section>
+            <div className="mt-8 flex flex-col items-center gap-3">
+              <Link
+                to="/schedule"
+                className="inline-flex items-center gap-2 rounded-full border border-primary bg-primary px-8 py-3 text-sm tracking-wide text-primary-foreground transition-colors hover:bg-primary/90"
+                style={serif}
+              >
+                Ready to start your wellness journey
+              </Link>
+              <p className="max-w-xl text-center text-xs leading-relaxed text-foreground/70">
+                Medical history, the HIPAA certification, and your signature are collected on the clinical intake.
+              </p>
+            </div>
 
 
             {formError && (

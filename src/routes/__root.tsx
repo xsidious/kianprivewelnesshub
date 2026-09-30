@@ -12,6 +12,7 @@ import { type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { AgeGate } from "../components/AgeGate";
 import { SiteHeader } from "../components/SiteHeader";
+import { ReferralCapture } from "../components/ReferralCapture";
 
 function NotFoundComponent() {
   return (
@@ -124,6 +125,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AgeGate>
+        <ReferralCapture />
         <SiteHeader />
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />

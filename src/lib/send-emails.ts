@@ -39,6 +39,9 @@ const intakeSchema = z.object({
   allergicReactionDetails: z.string().max(1000),
   attestationName: z.string().min(1).max(120),
   attestationDate: z.string().min(1).max(40),
+  medicalAccuracyCertified: z.boolean().refine((value) => value === true, {
+    message: "Please certify that your medical information is true and complete.",
+  }),
   clientSignatureDataUrl: z.preprocess(
     (value) => (value === undefined || value === null ? "" : value),
     z

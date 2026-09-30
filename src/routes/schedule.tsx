@@ -1,11 +1,20 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Stethoscope } from "lucide-react";
+import { useEffect, useState } from "react";
 import { ProviderConnectForm } from "@/components/IntakeMultiStepForm";
+import { capturePartnerRef, readPartnerRef } from "@/components/ReferralCapture";
 
 const kianLogo = "/assets/kian-prive-logo.png";
 const carmenPortrait = "/assets/carmen-ramirez-portrait.png";
 
+type ScheduleSearch = {
+  ref?: string;
+};
+
 export const Route = createFileRoute("/schedule")({
+  validateSearch: (search: Record<string, unknown>): ScheduleSearch => ({
+    ref: typeof search.ref === "string" ? search.ref.trim().slice(0, 80) : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Connect with a Provider — KIAN Privé" },
@@ -90,6 +99,13 @@ function MeetYourProvider() {
 }
 
 function SchedulePage() {
+  const { ref } = Route.useSearch();
+  const [code, setCode] = useState(ref ?? "");
+  useEffect(() => {
+    capturePartnerRef(ref);
+    const saved = readPartnerRef();
+    if (saved) setCode(saved);
+  }, [ref]);
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex max-w-3xl flex-col items-center px-4 py-12 sm:px-6 sm:py-16">
@@ -135,7 +151,7 @@ function SchedulePage() {
         </div>
 
         <MeetYourProvider />
-        <ProviderConnectForm />
+        <ProviderConnectForm referredBy={code} />
 
         <div className="mt-14 flex flex-col items-center">
           <div className="h-px w-24 bg-primary/40" />

@@ -106,9 +106,12 @@ function CheckboxGrid({
   );
 }
 
-export function ProviderConnectForm() {
+export function ProviderConnectForm({ referredBy = "" }: { referredBy?: string }) {
   const [step, setStep] = useState(0);
-  const [data, setData] = useState<IntakeFormData>(() => emptyIntakeForm());
+  const [data, setData] = useState<IntakeFormData>(() => ({
+    ...emptyIntakeForm(),
+    referredBy: referredBy.trim().slice(0, 200),
+  }));
   const [consentAcknowledged, setConsentAcknowledged] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -161,6 +164,9 @@ export function ProviderConnectForm() {
       }
       if (!consentAcknowledged) {
         return "Please acknowledge the disclaimer and informed consent.";
+      }
+      if (!data.medicalAccuracyCertified) {
+        return "Please certify that your medical information is true and complete.";
       }
       if (!data.photoVideoConsentAccepted) {
         return "Please accept the Photo, Video, Testimonial, HIPAA Authorization Consent and Release.";
@@ -908,6 +914,21 @@ export function ProviderConnectForm() {
                   guidelines.
                 </li>
               </ol>
+
+              <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-md border border-primary/25 bg-background/60 px-3 py-2.5 text-sm text-foreground/85">
+                <input
+                  type="checkbox"
+                  checked={data.medicalAccuracyCertified}
+                  onChange={(e) => setField("medicalAccuracyCertified", e.target.checked)}
+                  className="mt-1 h-4 w-4 accent-primary"
+                />
+                <span>
+                  I certify that the medical information provided on this form is true, correct, complete, and accurate
+                  to the best of my knowledge. I understand that any false, misleading, or omitted information may
+                  result in denial, cancellation, or other consequences, and I assume full responsibility and liability
+                  for any misinformation, misrepresentation, or omission contained herein.
+                </span>
+              </label>
 
               <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-md border border-primary/25 bg-background/60 px-3 py-2.5 text-sm text-foreground/85">
                 <input

@@ -46,8 +46,8 @@ const RESOURCES: ResourceLink[] = [
     hash: "compendium",
   },
   {
-    kind: "Article",
-    title: "Peptide therapy questions, answered",
+    kind: "FAQ",
+    title: "Frequently Asked Questions",
     summary:
       "Carmen Teresa Ramirez, M.D. on how peptides differ from other treatments, how a protocol is chosen, and why compounding should stay under a physician.",
     to: "/faq",

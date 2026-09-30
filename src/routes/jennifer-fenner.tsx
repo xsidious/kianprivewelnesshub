@@ -124,6 +124,23 @@ function JenniferFenner() {
           </div>
         </section>
 
+        <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row">
+          <Link
+            to="/consultation"
+            className="inline-flex items-center rounded-full border border-primary bg-primary px-6 py-3 text-sm tracking-wide text-primary-foreground transition-colors hover:bg-primary/90"
+            style={{ fontFamily: '"Cormorant Garamond", serif' }}
+          >
+            Book a consultation
+          </Link>
+          <Link
+            to="/schedule"
+            className="inline-flex items-center rounded-full border border-primary/40 px-6 py-3 text-sm tracking-wide text-foreground transition-colors hover:border-primary hover:bg-primary/10"
+            style={{ fontFamily: '"Cormorant Garamond", serif' }}
+          >
+            Ready to start your wellness journey
+          </Link>
+        </div>
+
         <div className="mt-14 flex flex-col items-center">
           <div className="h-px w-24 bg-primary/40" />
           <p

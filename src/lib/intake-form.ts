@@ -41,6 +41,7 @@ export type IntakeFormData = {
   // 07 Attestation
   attestationName: string;
   attestationDate: string;
+  medicalAccuracyCertified: boolean;
   clientSignatureDataUrl: string;
   // 08 Photo / video / testimonial HIPAA media authorization
   photoVideoConsentAccepted: boolean;
@@ -144,6 +145,7 @@ export const emptyIntakeForm = (): IntakeFormData => ({
   allergicReactionDetails: "",
   attestationName: "",
   attestationDate: new Date().toISOString().slice(0, 10),
+  medicalAccuracyCertified: false,
   clientSignatureDataUrl: "",
   photoVideoConsentAccepted: false,
   photoVideoConsentSignedAt: new Date().toISOString().slice(0, 10),
@@ -229,6 +231,10 @@ export function formatIntakeEmailBody(data: IntakeFormData): string {
     "07 PATIENT ATTESTATION",
     line("Printed Name", data.attestationName),
     line("Date", data.attestationDate),
+    line(
+      "Medical information certified true and complete",
+      data.medicalAccuracyCertified ? "YES" : "NO",
+    ),
     line("Handwritten signature", data.clientSignatureDataUrl ? "Captured" : "Missing"),
     "",
     "08 PHOTO / VIDEO / TESTIMONIAL HIPAA AUTHORIZATION",

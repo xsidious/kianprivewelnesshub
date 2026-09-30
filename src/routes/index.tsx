@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, ArrowUp, Sparkles, Stethoscope } from "lucide-react";
+import { AlertTriangle, ArrowUp, Stethoscope } from "lucide-react";
 
 const kianLogo = "/assets/kian-prive-logo.png";
 const wellnessCouple = "/assets/wellness-couple.jpg";
 const peptidesHero = "/assets/peptides-hero.jpg";
-const physicianTablet = "/assets/physician-tablet.jpg";
+const physicianTablet = "/assets/physician-tablet.png";
 const catGlp1 = "/assets/cat-glp1.jpg";
 const catRegeneration = "/assets/cat-regeneration-body.jpg";
 const catGh = "/assets/cat-gh.jpg";
@@ -54,6 +54,12 @@ function KianLogo() {
 
 
 function Index() {
+  useEffect(() => {
+    const hash = window.location.hash.replace("#", "");
+    if (hash !== "physician-protocols" && hash !== "compound-therapy") return;
+    document.getElementById(hash)?.scrollIntoView({ block: "start" });
+  }, []);
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex max-w-3xl flex-col items-center px-4 py-16 sm:px-6 sm:py-24">
@@ -72,6 +78,8 @@ function Index() {
         </p>
 
         <WellnessJourney />
+
+        <CompoundTherapy />
 
         <AftercarePrograms />
 
@@ -388,25 +396,17 @@ function WellnessJourney() {
           Ready to Start Your Personalized Wellness Program
         </p>
         <p className="mt-3 max-w-2xl text-center text-sm leading-relaxed text-foreground/80 sm:text-base">
-          Ready to get started? Select a physician to begin your new program — or if you'd like guidance first, connect with a wellness specialist for a consultation on which peptides, fitness routines, or nutrition plans work best alongside your compounded peptide.
+          Ready to get started? Review the physician-supported protocols, then connect with a provider to begin your program.
         </p>
         <div className="mt-4 flex w-full max-w-3xl flex-wrap justify-center gap-3">
-          <Link
-            to="/schedule"
+          <a
+            href="#physician-protocols"
             className="inline-flex h-16 w-full items-center justify-center gap-2 rounded-full border border-primary bg-primary/10 px-6 py-2.5 text-center text-sm leading-tight tracking-wide text-foreground transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-[calc(50%-0.375rem)] lg:w-[calc(33.333%-0.5rem)]"
             style={{ fontFamily: '"Cormorant Garamond", serif' }}
           >
             <Stethoscope className="h-4 w-4 shrink-0" aria-hidden="true" />
-            Connect with Provider
-          </Link>
-          <Link
-            to="/jennifer-fenner"
-            className="inline-flex h-16 w-full items-center justify-center gap-2 rounded-full border border-primary/40 bg-background/60 px-6 py-2.5 text-center text-sm leading-tight tracking-wide text-foreground transition-colors hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-[calc(50%-0.375rem)] lg:w-[calc(33.333%-0.5rem)]"
-            style={{ fontFamily: '"Cormorant Garamond", serif' }}
-          >
-            <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" />
-            Personalize Your Wellness Journey
-          </Link>
+            Connect with a Provider
+          </a>
           <a
             href="#compendium"
             className="inline-flex h-16 w-full items-center justify-center rounded-full border border-primary/40 bg-background/60 px-6 py-2.5 text-center text-sm leading-tight tracking-wide text-foreground transition-colors hover:border-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:w-[calc(50%-0.375rem)] lg:w-[calc(33.333%-0.5rem)]"
@@ -434,9 +434,102 @@ function WellnessJourney() {
   );
 }
 
+function CompoundTherapy() {
+  const steps = [
+    "Complete a secure intake so a physician can review your history, labs, and goals.",
+    "If clinically indicated, a KIAN Privé physician prescribes a personalized protocol.",
+    "The first order and every refill are filled only under an active prescription, as part of your wellness plan.",
+  ];
+  const notes = [
+    "Includes monthly pathway options and follow-up optimization.",
+    "Additional protocol add-ons are available after clinical review.",
+  ];
+
+  return (
+    <section id="compound-therapy" className="mt-16 w-full scroll-mt-24 sm:mt-20">
+      <div className="flex flex-col items-center">
+        <div className="h-px w-24 bg-primary/40" />
+        <p className="mt-8 text-[11px] uppercase tracking-[0.22em] text-primary">Physician-prescribed</p>
+        <h2
+          className="mt-3 text-center text-3xl text-foreground sm:text-4xl"
+          style={{ fontFamily: '"Cormorant Garamond", serif' }}
+        >
+          Compound Therapy
+        </h2>
+        <p className="mt-4 max-w-2xl text-center text-sm leading-relaxed text-foreground/80 sm:text-base">
+          GLP-1 and peptide protocols are prescribed as part of a wellness plan. They are not sold in the KIAN retail
+          shop. Browse the compounding guide below, then connect with a provider to begin.
+        </p>
+      </div>
+
+      <div className="mt-8 grid gap-4">
+        {steps.map((step, index) => (
+          <article
+            key={step}
+            className="rounded-xl border border-primary/20 bg-card/60 p-5 shadow-[0_10px_30px_-20px_rgba(160,130,70,0.35)]"
+          >
+            <p className="text-[11px] uppercase tracking-[0.18em] text-primary">Step {index + 1}</p>
+            <p className="mt-2 text-sm leading-relaxed text-foreground/85">{step}</p>
+          </article>
+        ))}
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <article className="rounded-xl border border-primary/20 bg-card/60 p-5 shadow-[0_10px_30px_-20px_rgba(160,130,70,0.35)]">
+          <h3 className="text-lg text-foreground" style={{ fontFamily: '"Cormorant Garamond", serif' }}>
+            Weight loss and metabolic agents
+          </h3>
+          <p className="mt-3 text-sm leading-relaxed text-foreground/80">
+            GLP 1 and GLP 2 pathways are structured with physician supervision, dose titration, and periodic progress
+            review.
+          </p>
+        </article>
+        <article className="rounded-xl border border-primary/20 bg-card/60 p-5 shadow-[0_10px_30px_-20px_rgba(160,130,70,0.35)]">
+          <h3 className="text-lg text-foreground" style={{ fontFamily: '"Cormorant Garamond", serif' }}>
+            Important notice
+          </h3>
+          <p className="mt-3 text-sm leading-relaxed text-foreground/80">
+            For professional and prescribed use only, under an active patient-practitioner relationship.
+          </p>
+        </article>
+      </div>
+
+      <article className="mt-4 rounded-xl border border-primary/20 bg-card/60 p-5 shadow-[0_10px_30px_-20px_rgba(160,130,70,0.35)] sm:p-6">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-primary">Consultation</p>
+        <p className="mt-2 text-sm leading-relaxed text-foreground/85">
+          Peptide optimization consultation from $100. Member pricing is confirmed after approval. Route and dose are
+          selected only after evaluation.
+        </p>
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-foreground/80">
+          {notes.map((note) => (
+            <li key={note}>{note}</li>
+          ))}
+        </ul>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <a
+            href="#physician-protocols"
+            className="inline-flex items-center gap-2 rounded-full border border-primary bg-primary/10 px-6 py-3 text-sm tracking-wide text-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+            style={{ fontFamily: '"Cormorant Garamond", serif' }}
+          >
+            <Stethoscope className="h-4 w-4" aria-hidden="true" />
+            Connect with a provider
+          </a>
+          <a
+            href="#compendium"
+            className="inline-flex items-center rounded-full border border-primary/40 px-6 py-3 text-sm tracking-wide text-foreground transition-colors hover:border-primary hover:bg-primary/10"
+            style={{ fontFamily: '"Cormorant Garamond", serif' }}
+          >
+            Wellness Compounding Guide
+          </a>
+        </div>
+      </article>
+    </section>
+  );
+}
+
 function AftercarePrograms() {
   return (
-    <section className="mt-16 w-full sm:mt-20">
+    <section id="physician-protocols" className="mt-16 w-full scroll-mt-24 sm:mt-20">
       <div className="flex flex-col items-center">
         <div className="h-px w-24 bg-primary/40" />
         <h2
@@ -452,7 +545,7 @@ function AftercarePrograms() {
           <div className="flex items-center justify-center p-6 sm:w-2/5 sm:p-8">
             <img
               src={physicianTablet}
-              alt="Physician in a white lab coat reviewing a tablet"
+              alt="Physicians reviewing a treatment plan on a tablet"
               width={400}
               height={500}
               loading="lazy"
